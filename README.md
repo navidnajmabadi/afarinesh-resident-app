@@ -1,10 +1,10 @@
 # Afarinesh Resident App
 
-Mobile-first (iPhone) resident app for the Afarinesh Sabz tower. Persian, right-to-left, with light and dark themes.
+Responsive resident app (desktop and mobile, iPhone-first) for the Afarinesh Sabz tower. Persian, right-to-left, with light and dark themes.
 
-**Live demo:** https://navidnajmabadi.github.io/afarinesh-resident-app/
+**Live app:** https://navidnajmabadi.github.io/afarinesh-resident-app/
 
-Demo login: unit `1204`, password `1234` (second account: `407` / `4321`).
+Sample accounts: unit `1204` / password `1234`, unit `407` / password `4321`.
 
 ## What works
 - Login with validation, building rules consent, password change, logout
@@ -15,6 +15,8 @@ Demo login: unit `1204`, password `1234` (second account: `407` / `4321`).
 - Activity tab to follow every request, booking and order
 - Finance: unit balance, spending trend, breakdown, transactions with receipts; building income/expense charts by month, facility performance, owners' report
 - Weekly report preview and PDF export (`report.html`), plus a ready [sample PDF](weekly-report-sample.pdf)
+- Desktop layout with a sidebar and two-column dashboards; mobile layout with a bottom tab bar
+- Add bookings to the phone or computer calendar (.ics)
 - Add to Home Screen on iPhone for a full-screen app
 
 All data is sample data, stored in the browser's localStorage. Payments and email sending are simulated; there is no backend.

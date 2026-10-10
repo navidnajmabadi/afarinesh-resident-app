@@ -83,8 +83,8 @@ const ART={tower,pool,arches,court,cup};
 /* ============ STATIC DATA ============ */
 const TOWER='آفرینش سبز';
 const USERS={
- '1204':{pass:'1234',name:'آرش',full:'آرش نیک‌منش',role:'مالک · ۱۰ سهم',shares:10,email:'arash@example.com',units:['1204','1408']},
- '1408':{pass:'1234',name:'آرش',full:'آرش نیک‌منش',role:'مالک · ۸ سهم',shares:8,email:'arash@example.com',units:['1204','1408']},
+ '1204':{pass:'1234',name:'علی',full:'علی بنده‌زاده',role:'مالک · ۱۰ سهم',shares:10,email:'ali@example.com',units:['1204','1408']},
+ '1408':{pass:'1234',name:'علی',full:'علی بنده‌زاده',role:'مالک · ۸ سهم',shares:8,email:'ali@example.com',units:['1204','1408']},
  '407':{pass:'4321',name:'سارا',full:'سارا مهرپور',role:'مستاجر · ۶ سهم',shares:6,email:'sara@example.com',units:['407']},
 };
 const CATS={
