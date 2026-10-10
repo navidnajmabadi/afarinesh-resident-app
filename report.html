@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>گزارش آفرینش</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,500&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body{background:#E4E0D8;margin:0;font-family:var(--f);color:#17140F}
+  .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;background:rgba(243,240,234,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid rgba(23,20,15,.08)}
+  .toolbar a,.toolbar button{height:42px;border-radius:14px;padding:0 16px;display:inline-flex;align-items:center;gap:6px;font:600 14px var(--f);text-decoration:none;color:#17140F;background:rgba(23,20,15,.06);border:0;cursor:pointer}
+  .toolbar button{background:#17140F;color:#F7F2E8}
+  .toolbar .ico{width:18px;height:18px}
+  .pages-wrap{padding:16px;display:flex;flex-direction:column;gap:16px;align-items:center}
+  .a4{width:min(100%,210mm);aspect-ratio:210/297;background:#FFFEFB;position:relative;overflow:hidden;box-shadow:0 18px 40px rgba(40,30,10,.18)}
+  .a4 .paper{position:absolute;top:0;left:0;transform-origin:0 0;box-shadow:none;border-radius:0}
+  .big{font-size:22px;font-weight:300;margin:8px 0 2px;direction:rtl}
+  @page{size:A4;margin:0}
+  @media print{
+    body{background:none}
+    .toolbar{display:none}
+    .pages-wrap{padding:0;gap:0;display:block}
+    .a4{width:210mm;height:297mm;box-shadow:none;page-break-after:always;break-after:page}
+    .a4:last-child{page-break-after:auto;break-after:auto}
+    .a4 .paper{transform:scale(3.0527)!important}
+  }
+</style>
+</head>
+<body data-mode="light">
+<div class="toolbar"><a href="index.html">${back}</a><span id="ttl" style="font-weight:600;font-size:14px"></span><button type="button" id="print">چاپ / ذخیره PDF</button></div>
+<main class="pages-wrap" id="pages"></main>
+<script src="shared.js"></script>
+<script>
+const q=new URLSearchParams(location.search);
+const unit=USERS[q.get('unit')]?q.get('unit'):'1204';
+const st=loadState(unit);
+document.querySelector('.toolbar a').innerHTML=I('back')+'بازگشت';
+document.getElementById('print').insertAdjacentHTML('afterbegin',I('download'));
+const foot=t=>`<div class="pfoot"><span>برج ${TOWER} · ${t}</span><span>صفحه ۱ از ۱</span></div>`;
+const head=t=>`<div style="display:flex;justify-content:space-between;align-items:center"><span class="pbrand">AFARINESH</span><span>${t}</span></div><div style="height:1px;background:#A27A2C;opacity:.5"></div>`;
+let pages,title;
+if(q.has('receipt')){
+  const x=st.tx.find(t=>t.id===q.get('receipt'))||st.tx[0];title='رسید '+faDigits(x.code);
+  pages=[`${head('رسید تراکنش')}<h4>واحد ${faDigits(unit)} · ${USERS[unit].full}</h4>
+   <div class="big num" style="color:${x.a>0?'#2C7553':'#17140F'}">${x.a>0?'+':'−'}${T(x.a)} <span style="font-size:9px;color:#6C6458">تومان</span></div>
+   <div class="prow"><span>عنوان</span><b>${esc(x.t)}</b></div><div class="prow"><span>دسته</span><span>${x.c}</span></div><div class="prow"><span>تاریخ</span><span>${x.dt}</span></div><div class="prow"><span>شماره پیگیری</span><span>${faDigits(x.code)}</span></div>
+   <h4 style="font-size:9px;margin-top:6px">شرح</h4><span>${esc(x.d)}</span>
+   <div style="margin-top:10px;padding:6px;border:1px dashed #A27A2C;border-radius:5px;color:#6C6458">مانده حساب پس از این تراکنش در صورت‌حساب ماهانه واحد ${faDigits(unit)} درج می‌شود. این رسید به‌صورت خودکار صادر شده است.</div>
+   ${foot('رسید خودکار')}`];
+} else if(q.has('own')){
+  const o=OWN[+q.get('own')]||OWN[0];title='سند '+faDigits(o.code);
+  pages=[`${head('سند مالی مالکین')}<h4>${o.t}</h4><div class="big num" style="color:${o.a>0?'#2C7553':'#17140F'}">${o.a>0?'+':'−'}${T(o.a)} <span style="font-size:9px;color:#6C6458">تومان</span></div>
+   <div class="prow"><span>نوع</span><span>${o.a>0?'درآمد':'هزینه'}</span></div><div class="prow"><span>تاریخ</span><span>${o.dt} ۱۴۰۵</span></div><div class="prow"><span>شماره پیگیری</span><span>${faDigits(o.code)}</span></div>
+   <h4 style="font-size:9px;margin-top:6px">شرح</h4><span>${o.d}</span>${foot('امور مالی')}`];
+} else {
+  const k=Math.min(2,Math.max(0,+(q.get('week')??2)));const o=(q.get('o')||'111').split('').map(c=>c==='1');
+  pages=reportPages(st,k,o);title='گزارش هفتگی · '+WEEKS[k].label;
+}
+document.title=title;document.getElementById('ttl').textContent=title;
+document.getElementById('pages').innerHTML=pages.map(p=>`<section class="a4"><div class="paper" dir="rtl">${p}</div></section>`).join('');
+function fit(){document.querySelectorAll('.a4').forEach(a=>a.querySelector('.paper').style.transform=`scale(${a.clientWidth/260})`);}
+fit();addEventListener('resize',fit);
+document.getElementById('print').onclick=()=>print();
+if(q.get('print')==='1'){document.fonts.ready.then(()=>setTimeout(()=>print(),400));}
+</script>
+</body>
+</html>

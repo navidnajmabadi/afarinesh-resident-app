@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fa">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Afarinesh Resident App</title>
+<meta name="description" content="Resident app for the Afarinesh Sabz tower: bookings, service requests, tracking, finance dashboards and weekly PDF reports.">
+<meta name="theme-color" content="#F3F0EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="آفرینش">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="icon" type="image/png" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@200;300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,500&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-mode="light">
+<div class="stage">
+  <aside class="panel" aria-label="Demo guide">
+    <div class="brand">AFARINESH</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1>Resident app</h1>
+      <p>Working demo with sample data. Persian, right‑to‑left. On an iPhone, open this page in Safari and tap Share → Add to Home Screen for the full‑screen app.</p>
+    </div>
+    <div class="demo">
+      Demo login<br>
+      Unit <code>1204</code> · Password <code>1234</code><br>
+      Second account: <code>407</code> · <code>4321</code>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="lbl">Appearance</span>
+      <div class="seg" id="panel-seg" style="direction:ltr">
+        <button data-mode="light" class="on">Light</button>
+        <button data-mode="dark">Dark</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="lbl">Jump to screen</span>
+      <div class="jump">
+        <button data-jump="login">Login</button>
+        <button data-jump="home">Home</button>
+        <button data-jump="services">Services</button>
+        <button data-jump="provider:spa">Spa providers</button>
+        <button data-jump="booking:spa-2">Booking flow</button>
+        <button data-jump="request:tech">Service request</button>
+        <button data-jump="cafe:cafe">Café order</button>
+        <button data-jump="activity">Tracking</button>
+        <button data-jump="finance">Finance · unit</button>
+        <button data-jump="finance:building">Finance · building</button>
+        <button data-jump="owners">Owners’ report</button>
+        <button data-jump="report">Weekly report</button>
+        <button data-jump="profile">Profile</button>
+      </div>
+    </div>
+    <p><a href="weekly-report-sample.pdf" target="_blank" rel="noopener">Sample weekly report (PDF)</a> · <a href="https://github.com/navidnajmabadi/afarinesh-resident-app" target="_blank" rel="noopener">Source on GitHub</a></p>
+    <p>Data is saved in this browser only. Profile → بازنشانی resets the demo.</p>
+  </aside>
+
+  <div class="device">
+    <div class="app" id="app" dir="rtl" lang="fa">
+      <div class="blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="statusbar" aria-hidden="true"><span>9:41</span><div class="island"></div><div class="sb-icons"><b></b><i></i></div></div>
+      <main class="view" id="view"></main>
+      <nav class="tabbar glass" id="tabbar" aria-label="ناوبری اصلی"></nav>
+      <div id="overlay"></div>
+      <div class="toast glass" id="toast" role="status" aria-live="polite"></div>
+      <div class="home-ind" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+<script src="shared.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
