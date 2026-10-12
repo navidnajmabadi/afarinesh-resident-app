@@ -11,7 +11,7 @@ out += `insert into public.units (code, role, shares, balance) values\n  ('1204'
 const prov = [];
 for (const [k, list] of Object.entries(ctx.PROV)) for (const p of list)
   prov.push(`  (${q(p.id)},${q(cat[k])},${q(p.n)},${q(p.r)},${p.price},${p.rate},${p.dur},${q(p.place)},${arr(p.tags)})`);
-out += `insert into public.providers (id, category, name, description, price, rating, duration_min, place, audience) values\n${prov.join(',\n')}\non conflict (id) do nothing;\n\n`;
+out += `insert into public.providers (id, category, name, description, price, rating, duration_min, place, audience) values\n${prov.join(',\n')}\non conflict (id) do update set category=excluded.category, name=excluded.name, description=excluded.description, price=excluded.price, rating=excluded.rating, duration_min=excluded.duration_min, place=excluded.place, audience=excluded.audience;\n\n`;
 const menu = []; let pos = 0;
 for (const [venue, m] of Object.entries(ctx.MENU)) m.items.forEach((items, ci) => items.forEach(it =>
   menu.push(`  (${q(venue)},${q(m.cats[ci])},${q(it[0])},${q(it[1] || null)},${it[2]},${pos++})`)));

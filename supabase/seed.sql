@@ -20,7 +20,7 @@ insert into public.providers (id, category, name, description, price, rating, du
   ('sp-2','spaces','تالار پذیرایی','تا ۸۰ مهمان · با تشریفات',18000000,4.8,240,'طبقه همکف','{"مراسم"}'),
   ('sp-3','spaces','اسکواش','سانس ۶۰ دقیقه‌ای',0,4.7,60,'طبقه منفی ۲','{"عمومی"}'),
   ('sp-4','spaces','کافی‌شاپ · رزرو میز','تا ۱۲ نفر',0,4.8,120,'لابی','{"دورهمی"}')
-on conflict (id) do nothing;
+on conflict (id) do update set category=excluded.category, name=excluded.name, description=excluded.description, price=excluded.price, rating=excluded.rating, duration_min=excluded.duration_min, place=excluded.place, audience=excluded.audience;
 
 delete from public.menu_items;
 insert into public.menu_items (venue, category, name, description, price, position) values

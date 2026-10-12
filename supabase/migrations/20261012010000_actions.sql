@@ -7,6 +7,7 @@ alter table public.menu_items add column if not exists position int not null def
 
 create table if not exists public.app_settings (key text primary key, value jsonb not null);
 alter table public.app_settings enable row level security;
+drop policy if exists "settings readable" on public.app_settings;
 create policy "settings readable" on public.app_settings for select to authenticated using (true);
 -- Payments below are simulated until a real gateway is connected. Set to false to switch them off.
 insert into public.app_settings values ('demo_payments', 'true'::jsonb) on conflict do nothing;
@@ -15,7 +16,9 @@ insert into public.app_settings values ('demo_payments', 'true'::jsonb) on confl
 drop policy if exists "unit bookings insert" on public.bookings;
 drop policy if exists "unit bookings update" on public.bookings;
 drop policy if exists "unit orders insert"   on public.orders;
+drop policy if exists "manager updates bookings" on public.bookings;
 create policy "manager updates bookings" on public.bookings for update using (public.is_manager());
+drop policy if exists "manager updates orders" on public.orders;
 create policy "manager updates orders"   on public.orders   for update using (public.is_manager());
 
 -- ============ helpers ============
