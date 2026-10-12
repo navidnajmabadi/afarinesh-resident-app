@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,500&display=swap">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=5">
 <style>
   body{background:#E4E0D8;margin:0;font-family:var(--f);color:#17140F}
   .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;background:rgba(243,240,234,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid rgba(23,20,15,.08)}
@@ -32,7 +32,7 @@
 <body data-mode="light">
 <div class="toolbar"><a href="index.html">${back}</a><span id="ttl" style="font-weight:600;font-size:14px"></span><button type="button" id="print">چاپ / ذخیره PDF</button></div>
 <main class="pages-wrap" id="pages"></main>
-<script src="shared.js?v=4"></script>
+<script src="shared.js?v=5"></script>
 <script>
 const q=new URLSearchParams(location.search);
 const unit=USERS[q.get('unit')]?q.get('unit'):'1204';
