@@ -18,6 +18,7 @@ const ranked=()=>{const u=usage();return Object.keys(CATS).sort((a,b)=>(u[b]||0)
 const catRoute=k=>k==='tech'||k==='rent'?'request:'+k:k==='cafe'||k==='kitchen'||k==='carwash'?'cafe:'+k:'provider:'+k;
 const catKeyOfProv=id=>Object.keys(PROV).find(k=>PROV[k].some(p=>p.id===id));
 const freshBook=()=>({day:0,slot:null,step:1,pay:'acc',remind:true,cal:true,note:''});
+const cleanPw=v=>String(v).replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g,'').trim();
 const clearPhotos=()=>{S.photos=[];S.photoFiles=[];};
 async function refresh(){const keep={opens:ST.opens,seen:ST.seen,rated:ST.rated,onboarded:ST.onboarded,autoReport:ST.autoReport,email:ST.email};ST=Object.assign(await loadState(ST.unit),keep);}
 const busy=(btn,on,label)=>{if(!btn)return;btn.disabled=on;if(on&&label){btn.dataset.l=btn.innerHTML;btn.textContent=label;}else if(!on&&btn.dataset.l){btn.innerHTML=btn.dataset.l;delete btn.dataset.l;}};
@@ -79,7 +80,7 @@ R.login=()=>({noTab:true,cls:'login',html:`
   after(){const f=document.getElementById('login-form');f.addEventListener('submit',e=>{e.preventDefault();doLogin();});}});
 
 async function doLogin(){
-  const u=enDigits(document.getElementById('l-u').value.trim()).toLowerCase(),p=enDigits(document.getElementById('l-p').value);
+  const u=enDigits(document.getElementById('l-u').value.trim()).toLowerCase(),p=cleanPw(document.getElementById('l-p').value);
   const err=document.getElementById('l-err');const fu=document.getElementById('l-u'),fp=document.getElementById('l-p'),btn=document.querySelector('#login-form [type=submit]');
   fu.classList.remove('bad');fp.classList.remove('bad');err.innerHTML='';
   if(!u){err.innerHTML=I('info','xs')+'کد واحد را وارد کنید.';fu.classList.add('bad');fu.focus();return;}
@@ -87,8 +88,10 @@ async function doLogin(){
   if(!S.consent){err.innerHTML=I('info','xs')+'برای ورود، پذیرش آیین‌نامه لازم است.';return;}
   busy(btn,true,'در حال ورود…');
   const {error}=await SB.auth.signInWithPassword({email:emailFor(u),password:p});
-  if(error){busy(btn,false,true);fu.classList.add('bad');fp.classList.add('bad');
-    err.innerHTML=I('info','xs')+(/invalid|credentials/i.test(error.message)?'کد واحد یا رمز عبور درست نیست. دوباره امتحان کنید یا «فراموشی رمز» را بزنید.':dbError(error));return;}
+  if(error){busy(btn,false,true);console.warn('sign-in failed:',error.status,error.code||'',error.message);
+    const bad=error.code==='invalid_credentials'||/invalid login/i.test(error.message);
+    if(bad){fu.classList.add('bad');fp.classList.add('bad');}
+    err.innerHTML=I('info','xs')+(bad?'کد واحد یا رمز عبور درست نیست. دوباره امتحان کنید یا «فراموشی رمز» را بزنید.':error.code==='email_not_confirmed'?'این حساب هنوز فعال نشده است. با دفتر ساختمان تماس بگیرید.':/api key/i.test(error.message)?'تنظیمات اتصال نادرست است. به پشتیبانی خبر دهید.':dbError(error));return;}
   await enter();
 }
 async function enter(){
@@ -495,7 +498,7 @@ const ACT={
  unit:async u=>{if(u===ST.unit){closeSheet();return;}try{const keep={seen:ST.seen,rated:ST.rated,onboarded:ST.onboarded,autoReport:ST.autoReport,email:ST.email};ST=Object.assign(await loadState(u),keep);}catch(e){toast(dbError(e));return;}S.cart={};subscribe();go('home',{root:true});toast('واحد '+faDigits(u));},
  saveemail:()=>{const v=document.getElementById('e-m').value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){document.getElementById('e-err').innerHTML=I('info','xs')+'آدرس ایمیل درست نیست. مثال: name@example.com';return;}ST.email=v;save();closeSheet();redraw();toast('ایمیل ذخیره شد');},
  sendrpt:()=>{closeSheet();toast('گزارش به '+ST.email+' فرستاده شد');},
- savepw:async()=>{const [a,b,c]=[0,1,2].map(i=>document.getElementById('pw'+i).value);const e=document.getElementById('pw-err'),btn=document.querySelector('[data-act="savepw"]');
+ savepw:async()=>{const [a,b,c]=[0,1,2].map(i=>cleanPw(document.getElementById('pw'+i).value));const e=document.getElementById('pw-err'),btn=document.querySelector('[data-act="savepw"]');
    if(!a){e.innerHTML=I('info','xs')+'رمز فعلی را وارد کنید.';return;}if(b.length<6){e.innerHTML=I('info','xs')+'رمز جدید باید حداقل ۶ کاراکتر باشد.';return;}if(b!==c){e.innerHTML=I('info','xs')+'تکرار رمز با رمز جدید یکی نیست.';return;}
    busy(btn,true,'در حال ذخیره…');
    const chk=await SB.auth.signInWithPassword({email:emailFor(ST.login),password:a});if(chk.error){busy(btn,false);e.innerHTML=I('info','xs')+'رمز فعلی درست نیست.';return;}

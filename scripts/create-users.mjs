@@ -9,6 +9,7 @@ import readline from 'node:readline';
 
 const cfg = fs.readFileSync(new URL('../config.js', import.meta.url), 'utf8');
 const BASE = process.env.SUPABASE_URL || cfg.match(/url:\s*'([^']+)'/)[1];
+const PUBLIC_KEY = cfg.match(/key:\s*'([^']+)'/)[1];
 
 function askHidden(q) {
   return new Promise(resolve => {
@@ -69,6 +70,18 @@ for (const p of PEOPLE) {
   out.push({ login: p.login, password, id });
 }
 
+// 2b. Check that each password really works, the same way the app signs in.
+console.log('\nChecking sign-in…');
+let allOk = true;
+for (const o of out) {
+  if (!o.password) { console.log(`  unit ${o.login}: skipped (password unchanged; use --reset to set a new one)`); continue; }
+  const r = await fetch(`${BASE}/auth/v1/token?grant_type=password`, { method: 'POST', headers: { apikey: PUBLIC_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ email: `${o.login}@afarinesh.test`, password: o.password }) });
+  const j = await r.json().catch(() => ({}));
+  o.ok = r.ok;
+  if (r.ok) console.log(`  unit ${o.login}: ✓ sign-in works`);
+  else { allOk = false; console.log(`  unit ${o.login}: ✗ FAILED (${r.status} ${j.error_code || j.error || ''} ${j.msg || j.error_description || ''})`); }
+}
+
 // 3. Demo activity. Each table is filled only if that unit has nothing in it yet.
 async function seedActivity(unit, rows) {
   for (const [table, list] of Object.entries(rows)) {
@@ -112,6 +125,6 @@ await seedActivity('407', {
   transactions: [{ title: 'شارژ ماهانه مهر', category: 'شارژ ساختمان', amount: -855012, description: 'سهم واحد از هزینه‌های جاری: ۶ سهم', code: '73916', created_at: ago(150) }],
 });
 
-console.log('\nDone. Sign-in codes and passwords (shown once; save them somewhere safe):\n');
+console.log(allOk ? '\nDone. Sign-in codes and passwords (shown once; save them somewhere safe):\n' : '\nFinished, but a sign-in check FAILED (see above). Passwords below may not work:\n');
 for (const o of out) console.log(`  unit ${o.login.padEnd(6)} ${o.password ?? '(account already existed, password unchanged)'}`);
 console.log('\nResidents sign in on the app with the unit code and this password.');
