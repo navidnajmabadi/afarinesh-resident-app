@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Bodoni+Moda:opsz,wght@6..96,500&display=swap">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <style>
   body{background:#E4E0D8;margin:0;font-family:var(--f);color:#17140F}
   .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:8px;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;background:rgba(243,240,234,.9);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-bottom:1px solid rgba(23,20,15,.08)}
@@ -32,11 +32,21 @@
 <body data-mode="light">
 <div class="toolbar"><a href="index.html">${back}</a><span id="ttl" style="font-weight:600;font-size:14px"></span><button type="button" id="print">چاپ / ذخیره PDF</button></div>
 <main class="pages-wrap" id="pages"></main>
-<script src="shared.js?v=5"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="shared.js?v=6"></script>
 <script>
+(async()=>{
 const q=new URLSearchParams(location.search);
-const unit=USERS[q.get('unit')]?q.get('unit'):'1204';
-const st=loadState(unit);
+let st;
+if(q.get('sample')==='1'){st=loadSampleState('1204');}
+else{
+  if(!SB){location.replace('index.html');return;}
+  const {data:{session}}=await SB.auth.getSession();
+  if(!session){location.replace('index.html');return;}
+  try{await loadCatalogue();st=await loadState(q.get('unit'));}catch(e){document.getElementById('pages').innerHTML='<p style="padding:40px;text-align:center">گزارش بارگذاری نشد. دوباره امتحان کنید.</p>';return;}
+}
+const unit=st.unit;
 document.querySelector('.toolbar a').innerHTML=I('back')+'بازگشت';
 document.getElementById('print').insertAdjacentHTML('afterbegin',I('download'));
 const foot=t=>`<div class="pfoot"><span>برج ${TOWER} · ${t}</span><span>صفحه ۱ از ۱</span></div>`;
@@ -44,7 +54,7 @@ const head=t=>`<div style="display:flex;justify-content:space-between;align-item
 let pages,title;
 if(q.has('receipt')){
   const x=st.tx.find(t=>t.id===q.get('receipt'))||st.tx[0];title='رسید '+faDigits(x.code);
-  pages=[`${head('رسید تراکنش')}<h4>واحد ${faDigits(unit)} · ${USERS[unit].full}</h4>
+  pages=[`${head('رسید تراکنش')}<h4>واحد ${faDigits(unit)} · ${esc(st.me.full)}</h4>
    <div class="big num" style="color:${x.a>0?'#2C7553':'#17140F'}">${x.a>0?'+':'−'}${T(x.a)} <span style="font-size:9px;color:#6C6458">تومان</span></div>
    <div class="prow"><span>عنوان</span><b>${esc(x.t)}</b></div><div class="prow"><span>دسته</span><span>${x.c}</span></div><div class="prow"><span>تاریخ</span><span>${x.dt}</span></div><div class="prow"><span>شماره پیگیری</span><span>${faDigits(x.code)}</span></div>
    <h4 style="font-size:9px;margin-top:6px">شرح</h4><span>${esc(x.d)}</span>
@@ -65,6 +75,7 @@ function fit(){document.querySelectorAll('.a4').forEach(a=>a.querySelector('.pap
 fit();addEventListener('resize',fit);
 document.getElementById('print').onclick=()=>print();
 if(q.get('print')==='1'){document.fonts.ready.then(()=>setTimeout(()=>print(),400));}
+})();
 </script>
 </body>
 </html>

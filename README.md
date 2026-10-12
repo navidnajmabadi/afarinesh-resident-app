@@ -4,7 +4,7 @@ Responsive resident app (desktop and mobile, iPhone-first) for the Afarinesh Sab
 
 **Live app:** https://navidnajmabadi.github.io/afarinesh-resident-app/
 
-Sample accounts: unit `1204` / password `1234`, unit `407` / password `4321`.
+Sign in with your unit code and the password issued to you. See `supabase/README.md` for how accounts are created.
 
 ## What works
 - Welcome screens on first login, plus a short guided tour the first time each section opens (Profile → راهنمای برنامه replays it)
@@ -21,9 +21,10 @@ Sample accounts: unit `1204` / password `1234`, unit `407` / password `4321`.
 - Add bookings to the phone or computer calendar (.ics)
 - Add to Home Screen on iPhone for a full-screen app
 
-All data is sample data, stored in the browser's localStorage. Payments and email sending are simulated; there is no backend.
+Data lives in a Supabase database (real login, per-unit privacy rules, live updates). Online payment and report emails are still simulated; there is no payment gateway or mail server connected yet.
 
 ## Files
-- `index.html`, `styles.css`, `app.js` — the app
+- `index.html`, `styles.css`, `app.js`, `config.js` — the app and its public Supabase settings
+- `supabase/` — database structure, rules, server functions and sample data
 - `shared.js` — sample data, state, charts and report layout (used by the app and the report)
 - `report.html` — printable A4 weekly report, receipts and documents

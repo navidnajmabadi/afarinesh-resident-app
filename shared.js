@@ -214,7 +214,7 @@ function defaultState(unit){
    {id:'t6',g:'۱۶ مهر',t:'تالار پذیرایی',c:'رزرو فضا',a:-4000000,ic:'building',d:'رزرو تالار پذیرایی برای ۴۰ نفر با دو مهماندار، پنجشنبه ۲۳ مهر',code:'74293',dt:'۱۶ مهر ۱۴۰۵ · ۱۳:۲۰'},
    {id:'t7',g:'۱ مهر',t:'شارژ ماهانه مهر',c:'شارژ ساختمان',a:-1425018,ic:'building',d:'سهم واحد از هزینه‌های جاری شهریور: ۱۰ سهم × ۱۴۲٬۵۰۲ تومان',code:'73915',dt:'۱ مهر ۱۴۰۵ · ۰۰:۰۰'},
   ];
-  const s={unit,bal:big?-12634541:unit==='407'?-2140000:3850000,
+  const s={unit,me:USERS[unit],bal:big?-12634541:unit==='407'?-2140000:3850000,
     acts:big?acts:acts.filter(a=>['a2','a5','a6'].includes(a.id)),
     tx:big?tx:tx.filter(t=>['t2','t7'].includes(t.id)),
     notifs:big?[{ic:'bolt',t:'تکنسین برق در راه است',d:'حدود ۱۲ دقیقه دیگر می‌رسد',w:'الان'},{ic:'file',t:'گزارش هفتگی آماده است',d:'۱۸ تا ۲۴ مهر',w:'۰۸:۰۰'},{ic:'megaphone',t:'شستشوی مخزن آب',d:'پنجشنبه ۲۳ مهر، ۹ تا ۱۲',w:'دیروز'}]:[{ic:'megaphone',t:'شستشوی مخزن آب',d:'پنجشنبه ۲۳ مهر، ۹ تا ۱۲',w:'دیروز'}],
@@ -222,12 +222,12 @@ function defaultState(unit){
   if(!big){s.tx=s.tx.map(t=>t.id==='t7'?{...t,a:-Math.round(142502*USERS[unit].shares),d:`سهم واحد از هزینه‌های جاری شهریور: ${fa(USERS[unit].shares)} سهم × ۱۴۲٬۵۰۲ تومان`}:t);}
   return s;
 }
-function loadState(unit){return store.get('afr-state-'+unit)||defaultState(unit);}
-function saveState(s){store.set('afr-state-'+s.unit,s);}
+function loadSampleState(unit){return defaultState(unit);}
 
 /* derived numbers */
-function monthDebits(s){return s.tx.filter(t=>t.a<0&&t.c!=='واریز').reduce((a,t)=>a+Math.abs(t.a),0);}
-function breakdown(s){const m={};s.tx.filter(t=>t.a<0).forEach(t=>{m[t.c]=(m[t.c]||0)+Math.abs(t.a)});
+function monthTx(s){const cur=jMonthKey(Date.now());return s.tx.filter(t=>!t.at||jMonthKey(t.at)===cur);}
+function monthDebits(s){return monthTx(s).filter(t=>t.a<0&&t.c!=='واریز').reduce((a,t)=>a+Math.abs(t.a),0);}
+function breakdown(s){const m={};monthTx(s).filter(t=>t.a<0).forEach(t=>{m[t.c]=(m[t.c]||0)+Math.abs(t.a)});
   const vars=['--c2','--c1','--c3','--c4','--c5'];
   let arr=Object.entries(m).sort((a,b)=>b[1]-a[1]);
   if(arr.length>5){const rest=arr.slice(4).reduce((a,x)=>a+x[1],0);arr=[...arr.slice(0,4),['سایر',rest]];}
@@ -272,7 +272,7 @@ function miniBars(vals,labels,h=70){const W=220,max=Math.max(...vals)||1,bw=W/va
 
 /* ============ WEEKLY REPORT PAGES ============ */
 function reportPages(s,k,opts=[true,true,true]){
-  const u=USERS[s.unit],w=weekData(s,k),bd=breakdown(s);
+  const u=s.me||USERS[s.unit],w=weekData(s,k),bd=breakdown(s);
   const foot=(n,t)=>`<div class="pfoot"><span>برج ${TOWER} · گزارش خودکار</span><span>صفحه ${fa(n)} از ${fa(t)}</span></div>`;
   const sections=[];
   if(opts[0])sections.push(`<h4>۱ · مالی</h4>
@@ -294,3 +294,114 @@ function reportPages(s,k,opts=[true,true,true]){
    <span style="color:#6C6458">هزینه روزانه (میلیون تومان)</span>`;
   return [cover,...sections].map((p,i)=>p+foot(i+1,total));
 }
+
+
+/* ============ BACKEND (Supabase) ============ */
+const CFG=(typeof window!=='undefined'&&window.AFR_CONFIG)||{};
+const SB=(typeof window!=='undefined'&&window.supabase&&CFG.url)?window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}):null;
+const emailFor=u=>`${String(u).trim().toLowerCase()}@afarinesh.test`;
+
+/* Dates: stored in UTC, shown in the Persian calendar, Tehran time. */
+const TZ='Asia/Tehran';
+const _f=o=>new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:TZ,...o});
+const F_WD=_f({weekday:'long'}),F_D=_f({day:'numeric'}),F_M=_f({month:'long'}),F_DM=_f({day:'numeric',month:'long'}),F_DMY=_f({day:'numeric',month:'long',year:'numeric'}),
+      F_DAY=_f({weekday:'long',day:'numeric',month:'long'}),F_TIME=_f({hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const _g=new Intl.DateTimeFormat('en-CA',{timeZone:TZ});
+const dayKey=ts=>_g.format(new Date(ts));
+const _j=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{timeZone:TZ,year:'numeric',month:'numeric'});
+const jMonthKey=ts=>{const p=_j.formatToParts(new Date(ts));return p.find(x=>x.type==='year').value+'-'+p.find(x=>x.type==='month').value;};
+const whenLabel=ts=>`${F_DAY.format(new Date(ts))} · ${F_TIME.format(new Date(ts))}`;
+function agoLabel(ts){const d=Date.now()-new Date(ts);if(d<120e3)return 'الان';return dayKey(ts)===dayKey(Date.now())?F_TIME.format(new Date(ts)):F_DM.format(new Date(ts));}
+// Iran has had no daylight-saving time since 2022, so Tehran is a fixed UTC+03:30.
+function tehranStart(dayOffset,hhmm){const [y,m,d]=dayKey(Date.now()).split('-').map(Number);const b=new Date(Date.UTC(y,m-1,d+dayOffset));const [h,mi]=hhmm.split(':').map(Number);const z=n=>String(n).padStart(2,'0');
+  return new Date(`${b.getUTCFullYear()}-${z(b.getUTCMonth()+1)}-${z(b.getUTCDate())}T${z(h)}:${z(mi)}:00+03:30`);}
+
+/* Slots: the next 7 days starting tomorrow. */
+const bookingDays=()=>Array.from({length:7},(_,i)=>{const d=tehranStart(i+1,'12:00');return {off:i+1,wk:F_WD.format(d)[0],num:F_D.format(d),full:F_WD.format(d),label:`${F_WD.format(d)} ${F_D.format(d)} ${F_M.format(d)}`};});
+const slotDate=(off,i)=>tehranStart(off,enDigits(SLOTS[i]));
+let TAKEN=new Set();
+const takenKey=(pid,ts)=>pid+'|'+new Date(ts).getTime();
+const slotFree=(pid,off,i,cat)=>{const d=slotDate(off,i);if(d-Date.now()<(cat==='hk'?24:1)*3600e3)return false;return !TAKEN.has(takenKey(pid,d));};
+function nextFree(p){for(let off=1;off<=7;off++)for(let i=0;i<SLOTS.length;i++)if(slotFree(p.id,off,i,p.cat))return `${off===1?'فردا':F_WD.format(slotDate(off,i))} ${SLOTS[i]}`;return 'تکمیل';}
+async function loadTaken(pid){const r=await SB.rpc('taken_slots',{p_provider:pid||null,p_from:new Date().toISOString(),p_to:new Date(Date.now()+14*864e5).toISOString()});if(r.error)throw r.error;
+  const keep=pid?[...TAKEN].filter(k=>!k.startsWith(pid+'|')):[];TAKEN=new Set(keep);r.data.forEach(x=>TAKEN.add(takenKey(x.provider_id,x.starts_at)));}
+
+/* Row → screen mappers. */
+const PROV_IC={spa:'lotus',classes:'dumbbell',hk:'sparkle',spaces:'building'};
+const VENUE_IC={cafe:'coffee',kitchen:'utensils',carwash:'car'},VENUE_T={cafe:'کافی‌شاپ',kitchen:'آشپزخانه',carwash:'کارواش'};
+const TXICON={'ورزش و کلاس':'dumbbell','اسپا و زیبایی':'lotus','غذا و کافه':'utensils','واریز':'card','رزرو فضا':'building','شارژ ساختمان':'building','خانه‌داری':'sparkle','تخفیف':'sparkle','بازگشت وجه':'arrowDown','کارواش':'car'};
+const REQ_IC={'برق':'bolt','مکانیک':'wrench','تعمیرات':'wrench','اسباب‌کشی':'building'};
+const PROVBYID={};
+const roleLabel=u=>`${u.role==='owner'?'مالک':'مستاجر'} · ${faDigits(u.shares)} سهم`;
+function mapBooking(b){
+  const p=PROVBYID[b.provider_id]||{name:'خدمت',description:'',place:'',category:'spa',duration_min:60};
+  const st={confirmed:['ok','تایید شده'],done:['done','انجام شد'],cancelled:['bad','لغو شده']}[b.status];
+  const tl=[[`رزرو${b.price>0?' و پرداخت':''}`,whenLabel(b.created_at),'done']];
+  if(b.status==='confirmed')tl.push(['یادآوری','۱ ساعت قبل','cur'],['انجام خدمت',whenLabel(b.starts_at),'']);
+  else if(b.status==='done')tl.push(['انجام خدمت',whenLabel(b.starts_at),'done']);else tl.push(['لغو رزرو','','done']);
+  const ts=new Date(b.starts_at);
+  return {id:'b'+b.id,rid:b.id,k:'res',catKey:p.category,st:st[0],stt:st[1],ic:PROV_IC[p.category]||'cal',t:p.name,d:p.description||'',when:whenLabel(b.starts_at),day:F_D.format(ts),mon:F_M.format(ts),
+    who:p.place||'',code:b.code,price:Number(b.price),paidBy:b.paid_by==='account'?'acc':b.paid_by,note:b.note||'',starts:b.starts_at,dur:p.duration_min,created:b.created_at,
+    cancellable:b.status==='confirmed',cal:b.status==='confirmed'?{want:true}:null,tl};
+}
+const RQ_ST={received:['wait','ثبت شد'],assigned:['wait','ارجاع شد'],in_progress:['live','در حال انجام'],done:['done','انجام شد'],cancelled:['bad','لغو شده']};
+function mapRequest(r){
+  const idx={received:0,assigned:1,in_progress:2,done:3,cancelled:0}[r.status];
+  const names=r.kind==='message'?['ارسال شد','بررسی دفتر','در حال پیگیری','پاسخ داده شد']:r.kind==='rent'?['ثبت درخواست','ارجاع به کارشناس','تماس و پیگیری','انجام شد']:['ثبت درخواست','ارجاع به تکنسین','در حال انجام','انجام شد'];
+  const tl=names.map((n,i)=>[n,i===0?whenLabel(r.created_at):'',r.status==='cancelled'?(i===0?'done':''):i<idx?'done':i===idx?(r.status==='done'?'done':'cur'):'']);
+  const st=RQ_ST[r.status];
+  return {id:'r'+r.id,rid:r.id,k:'req',catKey:r.kind==='message'?null:r.kind,st:st[0],stt:st[1],ic:r.kind==='tech'?(REQ_IC[r.type]||'wrench'):r.kind==='rent'?'key':'msg',
+    t:(r.kind==='tech'?'خدمات فنی · ':r.kind==='message'?'پیام به مدیریت · ':'')+r.type,d:(r.description||'').slice(0,48),when:whenLabel(r.created_at),
+    who:r.assignee||(r.kind==='rent'?'دفتر املاک ساختمان':r.kind==='message'?'دفتر ساختمان':'تاسیسات ساختمان'),code:r.code,created:r.created_at,photoPaths:r.photos||[],fullText:r.description,tl};
+}
+function mapOrder(o){
+  const done=o.status==='delivered',bad=o.status==='cancelled',n=o.items.reduce((a,x)=>a+x.qty,0);
+  const where=o.delivery==='unit'?'تحویل در واحد':o.delivery==='cafe'?'سرو در کافی‌شاپ':'پارکینگ';
+  return {id:'o'+o.id,rid:o.id,k:'ord',catKey:o.venue,st:bad?'bad':done?'done':'live',stt:bad?'لغو شده':done?'تحویل شد':'در حال آماده‌سازی',ic:VENUE_IC[o.venue],t:`${VENUE_T[o.venue]} · ${fa(n)} آیتم`,d:where,when:whenLabel(o.created_at),who:where,code:o.code,created:o.created_at,
+    tl:[['ثبت سفارش',whenLabel(o.created_at),'done'],['آماده‌سازی',done?'':'حدود ۲۰ دقیقه',done?'done':'cur'],[o.venue==='carwash'?'انجام شستشو':'تحویل','',done?'done':'']]};
+}
+function mapTx(t){return {id:'t'+t.id,rid:t.id,g:dayKey(t.created_at)===dayKey(Date.now())?'امروز':F_DM.format(new Date(t.created_at)),t:t.title,c:t.category,a:Number(t.amount),ic:TXICON[t.category]||'receipt',d:t.description||'',code:t.code,
+  dt:`${F_DMY.format(new Date(t.created_at))} · ${F_TIME.format(new Date(t.created_at))}`,at:t.created_at};}
+const notifIcon=t=>/رزرو/.test(t)?'cal':/پرداخت|وجه/.test(t)?'card':/سفارش/.test(t)?'utensils':/درخواست|کار/.test(t)?'wrench':'bell';
+const mapNotif=n=>({ic:notifIcon(n.title),t:n.title,d:n.body||'',w:agoLabel(n.created_at),read:n.read});
+
+function dbError(e){const m=(e&&e.message)||'';
+  const map={slot_taken:'این ساعت همین حالا رزرو شد. ساعت دیگری انتخاب کنید.',too_soon:'این زمان خیلی نزدیک است.',needs_day_ahead:'خانه‌داری را حداقل یک روز قبل رزرو کنید.',not_your_unit:'به این واحد دسترسی ندارید.',
+    not_cancellable:'این رزرو قابل لغو نیست.',bad_amount:'مبلغ معتبر نیست.',payments_disabled:'پرداخت آنلاین فعلاً غیرفعال است.',empty_order:'سبد خالی است.',item_not_found:'یکی از آیتم‌ها دیگر موجود نیست.',bad_quantity:'تعداد معتبر نیست.'};
+  for(const k in map)if(m.includes(k))return map[k];
+  if(/fetch|network/i.test(m))return 'اتصال برقرار نشد. اینترنت را بررسی کنید.';return 'خطایی رخ داد. دوباره امتحان کنید.';}
+
+/* Loaders */
+async function loadCatalogue(){
+  const [p,m]=await Promise.all([SB.from('providers').select('*').eq('active',true),SB.from('menu_items').select('*').eq('active',true).order('position')]);
+  if(p.error)throw p.error;if(m.error)throw m.error;
+  const ART_BY={'sp-1':'pool','sp-2':'arches','sp-3':'court','sp-4':'cup'};
+  Object.keys(PROV).forEach(k=>PROV[k]=[]);
+  p.data.forEach(r=>{PROVBYID[r.id]=r;(PROV[r.category]=PROV[r.category]||[]).push({id:r.id,cat:r.category,n:r.name,r:r.description||'',ic:PROV_IC[r.category]||'cal',rate:Number(r.rating)||0,tags:r.audience||[],price:Number(r.price),dur:r.duration_min,place:r.place||'',art:ART_BY[r.id]});});
+  ALLPROV.length=0;ALLPROV.push(...Object.values(PROV).flat());
+  for(const v of ['cafe','kitchen','carwash']){const rows=m.data.filter(x=>x.venue===v),cats=[...new Set(rows.map(x=>x.category))];
+    MENU[v].cats=cats;MENU[v].items=cats.map(c=>rows.filter(x=>x.category===c).map(x=>[x.name,x.description||'',Number(x.price),x.id]));}
+  await loadTaken(null);
+}
+async function loadState(unit){
+  const {data:{user}}=await SB.auth.getUser();if(!user)throw new Error('no_session');
+  const [pr,uu]=await Promise.all([SB.from('profiles').select('*').eq('id',user.id).single(),SB.from('user_units').select('unit_code, units(*)')]);
+  if(pr.error)throw pr.error;if(uu.error)throw uu.error;
+  const units=uu.data.map(x=>x.units).filter(Boolean).sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true}));
+  if(!units.length)throw new Error('no_units');
+  const cur=units.find(u=>u.code===unit)||units[0],prof=pr.data,prefs=prof.prefs||{};
+  const q=t=>SB.from(t).select('*').eq('unit_code',cur.code).order('created_at',{ascending:false}).limit(60);
+  const [tx,bk,rq,od,nt]=await Promise.all([q('transactions'),q('bookings'),q('requests'),q('orders'),q('notifications')]);
+  for(const r of [tx,bk,rq,od,nt])if(r.error)throw r.error;
+  const acts=[...bk.data.map(mapBooking),...rq.data.map(mapRequest),...od.data.map(mapOrder)].sort((a,b)=>new Date(b.created)-new Date(a.created));
+  return {uid:user.id,login:(user.email||'').split('@')[0],unit:cur.code,unitRow:cur,units,
+    me:{name:prof.first_name,full:prof.full_name,role:roleLabel(cur),shares:cur.shares,units:units.map(u=>u.code),manager:prof.app_role==='manager'},
+    bal:Number(cur.balance),tx:tx.data.map(mapTx),acts,notifs:nt.data.map(mapNotif),unread:nt.data.some(n=>!n.read),
+    onboarded:!!prof.onboarded,seen:prefs.seen||{},rated:prefs.rated||{},autoReport:prefs.autoReport,email:prof.email||'',opens:{}};
+}
+async function savePrefs(s){if(!SB||!s||!s.uid)return;
+  const {error}=await SB.from('profiles').update({prefs:{seen:s.seen||{},rated:s.rated||{},autoReport:s.autoReport!==false},onboarded:!!s.onboarded,email:s.email||null}).eq('id',s.uid);if(error)console.warn(error.message);}
+async function uploadFiles(unit,files){const paths=[];
+  for(const f of files){const ext=((f.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg';const path=`${unit}/${crypto.randomUUID()}.${ext}`;
+    const {error}=await SB.storage.from('attachments').upload(path,f,{contentType:f.type||'image/jpeg'});if(!error)paths.push(path);else console.warn(error.message);}
+  return paths;}
