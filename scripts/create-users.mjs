@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Creates the sample resident accounts and some demo activity.
-// Run once from your own terminal:  node scripts/create-users.mjs
+// Run from your own terminal:  node scripts/create-users.mjs
+// Add --reset to give existing accounts a new password (use it if you lost the first ones).
 // It asks for your project's SECRET key (hidden input). Never paste that key into chat or commit it.
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -24,6 +25,7 @@ if (KEY.startsWith('sb_publishable_')) { console.error('That is the publishable 
 const H = { apikey: KEY, 'Content-Type': 'application/json' };
 if (KEY.startsWith('eyJ')) H.Authorization = 'Bearer ' + KEY;       // legacy JWT-style service_role key
 const api = (kind, path, opt = {}) => fetch(`${BASE}/${kind}/v1/${path}`, { ...opt, headers: { ...H, ...(opt.headers || {}) } });
+const RESET = process.argv.includes('--reset');
 const gen = () => crypto.randomBytes(9).toString('base64url');
 const hoursFromNow = h => new Date(Date.now() + h * 3600e3).toISOString();
 
@@ -53,6 +55,11 @@ for (const p of PEOPLE) {
     const u = (list.users || []).find(x => x.email === email);
     if (!u) { console.error(`Could not create ${p.login}:`, r.status, await r.text()); process.exit(1); }
     id = u.id; password = null;
+    if (RESET) {
+      password = pass;
+      const pr = await api('auth', `admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ password }) });
+      if (!pr.ok) { console.error(`Could not reset ${p.login}:`, pr.status, await pr.text()); process.exit(1); }
+    }
   }
   const up = (table, rows, conflict) => api('rest', `${table}?on_conflict=${conflict}`, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
   let x = await up('profiles', [{ id, full_name: p.full, first_name: p.first, email: p.email, app_role: 'resident' }], 'id');
@@ -62,15 +69,16 @@ for (const p of PEOPLE) {
   out.push({ login: p.login, password, id });
 }
 
-// 3. Demo activity, only for units that have none yet.
+// 3. Demo activity. Each table is filled only if that unit has nothing in it yet.
 async function seedActivity(unit, rows) {
-  const has = await (await api('rest', `transactions?select=id&unit_code=eq.${unit}&limit=1`)).json();
-  if (has.length) return false;
   for (const [table, list] of Object.entries(rows)) {
-    const r = await api('rest', table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(list.map(x => ({ unit_code: unit, ...x }))) });
+    const has = await (await api('rest', `${table}?select=unit_code&unit_code=eq.${unit}&limit=1`)).json();
+    if (has.length) continue;
+    const keys = [...new Set(list.flatMap(Object.keys))];                       // every row must have the same fields
+    const body = list.map(x => ({ unit_code: unit, ...Object.fromEntries(keys.map(k => [k, x[k] ?? null])) }));
+    const r = await api('rest', table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) });
     if (!r.ok) { console.error(table, await r.text()); process.exit(1); }
   }
-  return true;
 }
 const ago = h => hoursFromNow(-h);
 await seedActivity('1204', {
