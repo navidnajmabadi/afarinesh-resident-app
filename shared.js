@@ -367,7 +367,7 @@ const mapNotif=n=>({ic:notifIcon(n.title),t:n.title,d:n.body||'',w:agoLabel(n.cr
 
 function dbError(e){const m=(e&&e.message)||'';
   const map={slot_taken:'این ساعت همین حالا رزرو شد. ساعت دیگری انتخاب کنید.',too_soon:'این زمان خیلی نزدیک است.',needs_day_ahead:'خانه‌داری را حداقل یک روز قبل رزرو کنید.',not_your_unit:'به این واحد دسترسی ندارید.',
-    not_cancellable:'این رزرو قابل لغو نیست.',bad_amount:'مبلغ معتبر نیست.',payments_disabled:'پرداخت آنلاین فعلاً غیرفعال است.',empty_order:'سبد خالی است.',item_not_found:'یکی از آیتم‌ها دیگر موجود نیست.',bad_quantity:'تعداد معتبر نیست.'};
+    not_cancellable:'این رزرو قابل لغو نیست.',not_changeable:'وضعیت این رزرو دیگر قابل تغییر نیست.',forbidden:'شما اجازه این کار را ندارید.',bad_amount:'مبلغ معتبر نیست.',payments_disabled:'پرداخت آنلاین فعلاً غیرفعال است.',empty_order:'سبد خالی است.',item_not_found:'یکی از آیتم‌ها دیگر موجود نیست.',bad_quantity:'تعداد معتبر نیست.'};
   for(const k in map)if(m.includes(k))return map[k];
   if(/fetch|network/i.test(m))return 'اتصال برقرار نشد. اینترنت را بررسی کنید.';return 'خطایی رخ داد. دوباره امتحان کنید.';}
 
@@ -405,3 +405,5 @@ async function uploadFiles(unit,files){const paths=[];
   for(const f of files){const ext=((f.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5)||'jpg';const path=`${unit}/${crypto.randomUUID()}.${ext}`;
     const {error}=await SB.storage.from('attachments').upload(path,f,{contentType:f.type||'image/jpeg'});if(!error)paths.push(path);else console.warn(error.message);}
   return paths;}
+
+async function myRole(){const {data:{user}}=await SB.auth.getUser();if(!user)return null;const r=await SB.from('profiles').select('app_role').eq('id',user.id).single();return r.data?r.data.app_role:null;}

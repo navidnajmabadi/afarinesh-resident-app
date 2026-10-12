@@ -470,3 +470,9 @@ textarea.input{height:110px;padding:14px 16px;resize:none;line-height:1.6}
   .cartbar{right:260px}
   .tab.on{background:var(--fill)}
 }
+
+/* ============ MANAGER ============ */
+.tbadge{position:absolute;top:6px;left:calc(50% + 4px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+.seg.sm4 button{font-size:12px;padding:0 4px}
+select.input{appearance:none;-webkit-appearance:none;cursor:pointer}
+@media (min-width:1024px){.tbadge{position:static;margin-inline-start:auto}}

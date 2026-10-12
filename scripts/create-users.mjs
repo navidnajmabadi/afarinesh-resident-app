@@ -33,6 +33,7 @@ const hoursFromNow = h => new Date(Date.now() + h * 3600e3).toISOString();
 const PEOPLE = [
   { login: '1204', full: 'علی بنده‌زاده', first: 'علی', email: 'ali@example.com', units: ['1204', '1408'] },
   { login: '407',  full: 'سارا مهرپور',   first: 'سارا', email: 'sara@example.com', units: ['407'] },
+  { login: 'office', full: 'دفتر ساختمان', first: 'دفتر', email: 'office@example.com', units: [], role: 'manager' },   // building office: sees every unit
 ];
 
 // 1. The units must exist (seed.sql creates them).
@@ -63,10 +64,12 @@ for (const p of PEOPLE) {
     }
   }
   const up = (table, rows, conflict) => api('rest', `${table}?on_conflict=${conflict}`, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows) });
-  let x = await up('profiles', [{ id, full_name: p.full, first_name: p.first, email: p.email, app_role: 'resident' }], 'id');
+  let x = await up('profiles', [{ id, full_name: p.full, first_name: p.first, email: p.email, app_role: p.role || 'resident' }], 'id');
   if (!x.ok) { console.error('profiles:', await x.text()); process.exit(1); }
-  x = await up('user_units', p.units.map(unit_code => ({ user_id: id, unit_code })), 'user_id,unit_code');
-  if (!x.ok) { console.error('user_units:', await x.text()); process.exit(1); }
+  if (p.units.length) {
+    x = await up('user_units', p.units.map(unit_code => ({ user_id: id, unit_code })), 'user_id,unit_code');
+    if (!x.ok) { console.error('user_units:', await x.text()); process.exit(1); }
+  }
   out.push({ login: p.login, password, id });
 }
 
@@ -126,5 +129,5 @@ await seedActivity('407', {
 });
 
 console.log(allOk ? '\nDone. Sign-in codes and passwords (shown once; save them somewhere safe):\n' : '\nFinished, but a sign-in check FAILED (see above). Passwords below may not work:\n');
-for (const o of out) console.log(`  unit ${o.login.padEnd(6)} ${o.password ?? '(account already existed, password unchanged)'}`);
+for (const o of out) console.log(`  ${(o.login.match(/^\d+$/)?'unit ':'user ')+o.login.padEnd(8)} ${o.password ?? '(account already existed, password unchanged)'}`);
 console.log('\nResidents sign in on the app with the unit code and this password.');

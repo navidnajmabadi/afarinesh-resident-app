@@ -6,7 +6,8 @@ const S={stack:[],mode:'light',book:null,cart:{},finTab:'unit',actTab:'all',reqT
   pay:{mode:'full',method:'gw'},rate:{stars:5,tags:[0,1]},msgType:0,photos:[],photoFiles:[],consent:true,last:null};
 const TABS=[['home','خانه','home'],['services','خدمات','grid'],['activity','فعالیت‌ها','pulse'],['finance','مالی','chart'],['profile','من','user']];
 const view=document.getElementById('view'),tabbar=document.getElementById('tabbar'),overlay=document.getElementById('overlay'),app=document.getElementById('app');
-function drawNav(){tabbar.innerHTML=`<div class="side-brand">AFARINESH</div><div class="side-sub">برج ${TOWER}</div>`+TABS.map(([r,l,i])=>`<button class="tab" data-tab="${r}" aria-label="${l}">${I(i)}<span>${l}</span></button>`).join('')+(ST?`<div class="side-foot"><div class="who"><span class="avatar">${ME().name[0]}</span><div class="stack"><b style="font-weight:600">${ME().full}</b><span class="m">واحد ${faDigits(ST.unit)}</span></div></div><button class="btn sec sm block" data-act="togglemode">${I(S.mode==='dark'?'sun':'moon','sm')} ${S.mode==='dark'?'حالت روشن':'حالت تیره'}</button></div>`:'');}
+function drawNav(){const mgr=!!MG&&!ST,tabs=mgr?MTABS():TABS,me=mgr?MG.me:(ST?ME():null);
+  tabbar.innerHTML=`<div class="side-brand">AFARINESH</div><div class="side-sub">${mgr?'پنل مدیریت':'برج '+TOWER}</div>`+tabs.map(([r,l,i,n])=>`<button class="tab" data-tab="${r}" aria-label="${l}${n?'، '+fa(n)+' مورد جدید':''}">${I(i)}<span>${l}</span>${n?`<b class="tbadge num">${fa(n)}</b>`:''}</button>`).join('')+(me?`<div class="side-foot"><div class="who"><span class="avatar">${me.name[0]}</span><div class="stack"><b style="font-weight:600">${me.full}</b><span class="m">${mgr?'مدیر':'واحد '+faDigits(ST.unit)}</span></div></div><button class="btn sec sm block" data-act="togglemode">${I(S.mode==='dark'?'sun':'moon','sm')} ${S.mode==='dark'?'حالت روشن':'حالت تیره'}</button>${mgr?`<button class="btn sec sm block" data-act="logout">${I('logout','sm')} خروج</button>`:''}</div>`:'');}
 
 const ME=()=>ST.me;
 const isOwner=()=>ST.unitRow.role==='owner';
@@ -35,7 +36,7 @@ function onRt(t,p){if(t==='notifications'&&p.eventType==='INSERT'&&p.new&&p.new.
 function render(dir='enter'){
   const [name,param]=S.stack[S.stack.length-1].split(':');
   const out=R[name](param);app.dataset.route=name;drawNav();
-  const dash=['home','services','activity','finance','profile'].includes(name);
+  const dash=['home','services','activity','finance','profile','m_home'].includes(name);
   view.className='view '+(dash?'dash ':name==='login'?'':'narrow ')+(out.flow?'flow ':'')+(out.cls||'')+' '+dir;
   view.innerHTML=out.html;view.scrollTop=0;
   tabbar.classList.toggle('hide',!!out.noTab);
@@ -63,14 +64,14 @@ const empty=(t,cta='')=>`<div class="empty glass" style="border-radius:22px">${t
 const photoPicker=()=>`<div class="thumbs" id="thumbs">${S.photos.map(src=>`<img src="${src}" alt="عکس پیوست">`).join('')}<label class="upl press">${I('camera')}افزودن عکس<input type="file" accept="image/*" multiple data-photo></label></div>`;
 
 /* ============ ROUTES ============ */
-const R={};
+const R={};Object.assign(R,MR);
 
 R.loading=()=>({noTab:true,html:`<div class="spin" role="status" aria-label="در حال بارگذاری" style="margin:40vh auto 0"></div>`});
 
 R.login=()=>({noTab:true,cls:'login',html:`
   <div class="hero">${tower()}<div class="wm"><div class="wm-word">AFARINESH</div><p class="sub" style="margin-top:12px">زندگی در برج ${TOWER}</p></div></div>
   <form class="glass" id="login-form" style="border-radius:28px" novalidate>
-    <div class="field"><label for="l-u">کد واحد</label><input class="input num" id="l-u" name="unit" inputmode="numeric" autocomplete="username" placeholder="مثلاً ۱۲۰۴"></div>
+    <div class="field"><label for="l-u">کد واحد یا نام کاربری</label><input class="input num" id="l-u" name="unit" inputmode="numeric" autocomplete="username" placeholder="مثلاً ۱۲۰۴"></div>
     <div class="field"><label for="l-p">رمز عبور</label><div style="position:relative"><input class="input" id="l-p" name="pass" type="password" autocomplete="current-password" placeholder="رمز عبور"><button type="button" class="icon-btn" style="position:absolute;left:4px;top:4px" aria-label="نمایش رمز" data-act="peek">${I('eye','sm')}</button></div></div>
     <div class="err" id="l-err" role="alert"></div>
     <button type="button" class="chk" role="checkbox" aria-checked="${S.consent}" data-act="consent"><span class="box">${I('check','xs')}</span><span>آیین‌نامه ساختمان را خوانده‌ام و می‌پذیرم. <span class="link" style="display:inline;min-height:0" data-sheet="rules">مطالعه</span></span></button>
@@ -96,7 +97,7 @@ async function doLogin(){
 }
 async function enter(){
   S.stack=['loading'];render('');
-  try{await loadCatalogue();ST=await loadState();}
+  try{if(await myRole()==='manager'){ST=null;await enterManager();return;}await loadCatalogue();ST=await loadState();}
   catch(e){console.error(e);await SB.auth.signOut();ST=null;S.stack=['login'];render('');toast(e.message==='no_units'?'این حساب به هیچ واحدی وصل نیست.':dbError(e));return;}
   S.stack=['home'];subscribe();render('');
   if(!ST.onboarded)showOnboarding();else toast(`خوش آمدید، ${ST.me.name}`);
@@ -335,7 +336,7 @@ R.profile=()=>{const u=ME();return {html:`
   <div class="list glass"><button class="press" data-act="logout" style="color:var(--bad)"><span class="tile-ic" style="background:var(--bad-soft);color:var(--bad)">${I('logout','sm')}</span><span class="t" style="flex:1">خروج از حساب</span></button></div>`};};
 
 /* ============ SHEETS ============ */
-const SH={
+const SH={};Object.assign(SH,MSH);Object.assign(SH,{
  act(id){const a=ST.acts.find(x=>x.id===id);const can=!!a.cancellable;const rated=ST.rated[a.id];
   return [a.t,`
    <div class="row"><div class="tile-ic">${I(a.ic)}</div><div class="stack"><span class="t">${esc(a.d)}</span><span class="m">${a.when}</span></div>${pillFor(a)}</div>
@@ -389,20 +390,20 @@ const SH={
  rate(key){const who=key.startsWith('staff')?STAFF[+key.slice(5)][1]:(ST.acts.find(a=>a.id===key)||{}).t;S.rate={key,stars:ST.rated[key]||5,tags:[0,1]};return ['امتیاز به '+esc(who),rateBody()];},
  message(){return ['پیام به مدیریت',`<div class="seg">${['مشکل','شکایت','پیشنهاد'].map((t,i)=>`<button class="${S.msgType===i?'on':''}" data-act="mtype:${i}">${t}</button>`).join('')}</div><div class="field"><label for="mm">پیام</label><textarea class="input" id="mm" placeholder="مثلاً نظافت طبقه ۱۰ به‌خوبی انجام نشده"></textarea><span class="err" id="mm-err" role="alert"></span></div>${photoPicker()}<button class="btn pri block" data-act="sendmsg">ارسال</button>`];},
  gateway(){return ['درگاه پرداخت',`<div class="spin"></div><p class="sub" style="text-align:center">در حال اتصال به درگاه بانکی…</p>`];},
-};
+});
 function rateBody(){const r=S.rate;return `<div class="row" style="justify-content:center;gap:2px;color:var(--gold)">${[1,2,3,4,5].map(i=>`<button class="icon-btn" aria-label="${fa(i)} ستاره" data-act="star:${i}"><svg class="ico" viewBox="0 0 24 24" style="width:34px;height:34px;fill:${i<=r.stars?'currentColor':'none'}">${P.star}</svg></button>`).join('')}</div>
    <div class="chips" style="flex-wrap:wrap;margin:0;padding:0;justify-content:center">${['برخورد خوب','مهارت بالا','وقت‌شناس','نظافت و پوشش'].map((t,i)=>`<button class="chip ${r.tags.includes(i)?'on':''}" data-act="rtag:${i}">${t}</button>`).join('')}</div>
    <div class="field"><label for="rt">نظر شما <span class="m">(اختیاری)</span></label><textarea class="input" id="rt"></textarea></div><button class="btn pri block" data-act="saverate">ثبت امتیاز</button>`;}
 
 let sheetOpen=false,sheetKey=null;
 function openSheet(key){const i=key.indexOf(':');const n=i<0?key:key.slice(0,i),p=i<0?undefined:key.slice(i+1);const [title,body]=SH[n](p);sheetKey=key;
-  if(sheetOpen){const sh=overlay.querySelector('.sheet');sh.setAttribute('aria-label',title);sh.querySelector('.sheet-h h2').innerHTML=title;sh.querySelector('.sheet-b').innerHTML=body;return;}
+  if(sheetOpen){const sh=overlay.querySelector('.sheet');sh.setAttribute('aria-label',title);sh.querySelector('.sheet-h h2').innerHTML=title;sh.querySelector('.sheet-b').innerHTML=body;showActPhotos();showUnitTx();return;}
   overlay.innerHTML=`<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><div class="grab"></div><div class="sheet-h"><h2 class="h-m">${title}</h2><button class="icon-btn" style="background:var(--fill)" data-act="close" aria-label="بستن">${I('x','sm')}</button></div><div class="sheet-b">${body}</div></div>`;
-  requestAnimationFrame(()=>{overlay.querySelector('.scrim').classList.add('show');overlay.querySelector('.sheet').classList.add('show');});sheetOpen=true;showActPhotos();}
+  requestAnimationFrame(()=>{overlay.querySelector('.scrim')?.classList.add('show');overlay.querySelector('.sheet')?.classList.add('show');});sheetOpen=true;showActPhotos();showUnitTx();}
 async function showActPhotos(){const box=document.getElementById('act-photos');if(!box)return;const paths=box.dataset.paths.split(',').filter(Boolean);
   const {data}=await SB.storage.from('attachments').createSignedUrls(paths,3600);(data||[]).forEach(x=>{if(x.signedUrl)box.insertAdjacentHTML('beforeend',`<a href="${x.signedUrl}" target="_blank" rel="noopener"><img src="${x.signedUrl}" alt="عکس پیوست"></a>`);});}
 function refreshSheet(){if(sheetOpen&&sheetKey){const b=overlay.querySelector('.sheet-b');const y=b.scrollTop;openSheet(sheetKey);overlay.querySelector('.sheet-b').scrollTop=y;}}
-function closeSheet(now){if(!sheetOpen)return;sheetOpen=false;sheetKey=null;const s=overlay.querySelector('.sheet'),c=overlay.querySelector('.scrim');if(now){overlay.innerHTML='';return;}s&&s.classList.remove('show');c&&c.classList.remove('show');setTimeout(()=>{if(!sheetOpen)overlay.innerHTML=''},300);}
+function closeSheet(now){if(!sheetOpen)return;S.mSelId=null;sheetOpen=false;sheetKey=null;const s=overlay.querySelector('.sheet'),c=overlay.querySelector('.scrim');if(now){overlay.innerHTML='';return;}s&&s.classList.remove('show');c&&c.classList.remove('show');setTimeout(()=>{if(!sheetOpen)overlay.innerHTML=''},300);}
 let tt;function toast(msg){const t=document.getElementById('toast');t.innerHTML=I('check','sm')+msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2800);}
 async function gateway(amount,done){openSheet('gateway');await new Promise(r=>setTimeout(r,1500));closeSheet(true);const ok=await done();if(ok!==false)toast(`پرداخت ${fa(amount)} تومان موفق بود`);}
 
@@ -468,7 +469,7 @@ function setMode(m){S.mode=m;document.body.dataset.mode=m;store.set(MODE_KEY,m);
   document.querySelectorAll('#panel-seg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));}
 
 /* ============ ACTIONS ============ */
-const ACT={
+const ACT={};Object.assign(ACT,ACTM);Object.assign(ACT,{
  back,close:()=>closeSheet(),toast:v=>toast(v),
  cf:v=>{S.catFilter=v;redraw();},
  pg:v=>{S.provGender=v;refreshSheet();},ps:v=>{S.provSort=v;refreshSheet();},papply:()=>{closeSheet();redraw();},pclear:()=>{S.provGender='all';S.provSort='rate';redraw();},
@@ -526,10 +527,10 @@ const ACT={
    const f=d=>d.toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Afarinesh//Resident App//FA','BEGIN:VEVENT','UID:'+a.code+'@afarinesh','DTSTAMP:'+f(new Date()),'DTSTART:'+f(st),'DTEND:'+f(en),'SUMMARY:'+a.t,'LOCATION:برج '+TOWER+' · '+a.who,'DESCRIPTION:کد پیگیری '+a.code,'BEGIN:VALARM','TRIGGER:-PT1H','ACTION:DISPLAY','DESCRIPTION:'+a.t,'END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
    const url=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));const l=document.createElement('a');l.href=url;l.download='afarinesh-'+a.code+'.ics';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);toast('فایل تقویم آماده شد');},
- logout:async()=>{unsubscribe();await SB.auth.signOut();ST=null;S.cart={};S.book=null;go('login',{root:true});},
+ logout:async()=>{unsubscribe();mUnsub();await SB.auth.signOut();ST=null;MG=null;S.cart={};S.book=null;go('login',{root:true});},
  consent:(_,__,el)=>{S.consent=!S.consent;el.setAttribute('aria-checked',S.consent);},
  peek:()=>{const i=document.getElementById('l-p');i.type=i.type==='password'?'text':'password';},
-};
+});
 
 /* ============ EVENTS ============ */
 document.addEventListener('click',e=>{
