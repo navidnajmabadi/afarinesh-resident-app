@@ -7,6 +7,8 @@ Responsive resident app (desktop and mobile, iPhone-first) for the Afarinesh Sab
 Sample accounts: unit `1204` / password `1234`, unit `407` / password `4321`.
 
 ## What works
+- Welcome screens on first login, plus a short guided tour the first time each section opens (Profile → راهنمای برنامه replays it)
+- Services ordered by how much each resident uses them; the most used appear first on Services and Home
 - Login with validation, building rules consent, password change, logout
 - Home: balance, live request tracking, upcoming bookings, announcements
 - Booking flow (time → details → payment) for spa, classes, housekeeping and spaces, with cancellation and refunds
