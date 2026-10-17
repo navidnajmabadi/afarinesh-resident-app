@@ -7,7 +7,7 @@ const S={stack:[],mode:'light',book:null,cart:{},finTab:'unit',actTab:'all',reqT
 const TABS=[['home','خانه','home'],['services','خدمات','grid'],['activity','فعالیت‌ها','pulse'],['finance','مالی','chart'],['profile','من','user']];
 const view=document.getElementById('view'),tabbar=document.getElementById('tabbar'),overlay=document.getElementById('overlay'),app=document.getElementById('app');
 function drawNav(){const mgr=!!MG&&!ST,tabs=mgr?MTABS():TABS,me=mgr?MG.me:(ST?ME():null);
-  tabbar.innerHTML=`<div class="side-brand">AFARINESH</div><div class="side-sub">${mgr?'پنل مدیریت':'برج '+TOWER}</div>`+tabs.map(([r,l,i,n])=>`<button class="tab" data-tab="${r}" aria-label="${l}${n?'، '+fa(n)+' مورد جدید':''}">${I(i)}<span>${l}</span>${n?`<b class="tbadge num">${fa(n)}</b>`:''}</button>`).join('')+(me?`<div class="side-foot"><div class="who"><span class="avatar">${me.name[0]}</span><div class="stack"><b style="font-weight:600">${me.full}</b><span class="m">${mgr?'مدیر':'واحد '+faDigits(ST.unit)}</span></div></div><button class="btn sec sm block" data-act="togglemode">${I(S.mode==='dark'?'sun':'moon','sm')} ${S.mode==='dark'?'حالت روشن':'حالت تیره'}</button>${mgr?`<button class="btn sec sm block" data-act="logout">${I('logout','sm')} خروج</button>`:''}</div>`:'');}
+  tabbar.innerHTML=`<div class="side-brand">AFARINESH</div><div class="side-sub">${mgr?'پنل مدیریت':'برج '+TOWER}</div>`+tabs.map(([r,l,i,n])=>`<button class="tab" data-tab="${r}" aria-label="${l}${n?'، '+fa(n)+' مورد جدید':''}">${I(i)}<span>${l}</span>${n?`<b class="tbadge num">${fa(n)}</b>`:''}</button>`).join('')+(me?`<div class="side-foot"><div class="who"><span class="avatar">${me.name[0]}</span><div class="stack"><b style="font-weight:600">${me.full}</b><span class="m">${mgr?(MG.me.admin?'مدیر سیستم':'مدیر'):'واحد '+faDigits(ST.unit)}</span></div></div><button class="btn sec sm block" data-act="togglemode">${I(S.mode==='dark'?'sun':'moon','sm')} ${S.mode==='dark'?'حالت روشن':'حالت تیره'}</button>${mgr?`<button class="btn sec sm block" data-act="logout">${I('logout','sm')} خروج</button>`:''}</div>`:'');}
 
 const ME=()=>ST.me;
 const isOwner=()=>ST.unitRow.role==='owner';
@@ -97,7 +97,7 @@ async function doLogin(){
 }
 async function enter(){
   S.stack=['loading'];render('');
-  try{if(await myRole()==='manager'){ST=null;await enterManager();return;}await loadCatalogue();ST=await loadState();}
+  try{if(['manager','admin'].includes(await myRole())){ST=null;await enterManager();return;}await loadCatalogue();ST=await loadState();}
   catch(e){console.error(e);await SB.auth.signOut();ST=null;S.stack=['login'];render('');toast(e.message==='no_units'?'این حساب به هیچ واحدی وصل نیست.':dbError(e));return;}
   S.stack=['home'];subscribe();render('');
   if(!ST.onboarded)showOnboarding();else toast(`خوش آمدید، ${ST.me.name}`);

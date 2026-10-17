@@ -24,7 +24,7 @@ Sign in with your unit code and the password issued to you. See `supabase/README
 Data lives in a Supabase database (real login, per-unit privacy rules, live updates). Online payment and report emails are still simulated; there is no payment gateway or mail server connected yet.
 
 ## Manager screens
-Accounts with the manager role (the `office` account) see: summary, requests, orders, bookings and units. Staff assign a request, change its status, mark orders delivered, and mark or cancel bookings (cancelling refunds in full). Residents are notified automatically.
+Accounts with the manager or admin role (`admin`) see: summary, requests, orders, bookings and units. Staff assign a request, change its status, mark orders delivered, and mark or cancel bookings (cancelling refunds in full). Residents are notified automatically.
 
 ## Files
 - `index.html`, `styles.css`, `app.js`, `manager.js`, `config.js` — the app and its public Supabase settings

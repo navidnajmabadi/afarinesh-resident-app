@@ -2,7 +2,8 @@
 insert into public.units (code, role, shares, balance) values
   ('1204','owner',10,-12634541),
   ('1408','owner', 8,  3850000),
-  ('407','tenant', 6, -2140000)
+  ('407','tenant', 6, -2140000),
+  ('907','owner', 7, -3250000)
 on conflict (code) do nothing;
 
 insert into public.providers (id, category, name, description, price, rating, duration_min, place, audience) values

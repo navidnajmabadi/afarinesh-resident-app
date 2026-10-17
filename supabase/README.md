@@ -10,8 +10,10 @@ assistant will call the same functions as the signed-in resident.
 - `migrations/…_actions.sql` booking, cancel, order and payment functions, manager actions
 - `migrations/…_storage.sql` private bucket for request photos and receipts
 - `migrations/…_manager.sql` manager action for bookings (done / cancel with full refund)
+- `migrations/…_roles.sql` the admin role (everything a manager can do, plus data management in later steps)
 - `seed.sql` units, providers and menus (regenerate with `node scripts/make-seed.mjs`)
-- `../scripts/create-users.mjs` creates the sample resident accounts and demo activity
+- `../scripts/create-users.mjs` creates the accounts (Ali, Navid, Admin) and sample activity for every unit
+- `../tests/` database tests on a local Postgres: `cd tests && npm install && npm test`
 
 ## Set up a new project
 1. Create a project at supabase.com. Put its URL and publishable key in `config.js`.
@@ -21,8 +23,9 @@ assistant will call the same functions as the signed-in resident.
    one-time passwords. Never put the secret key in this repository.
 
 Residents sign in with their unit code; the app turns it into `<code>@afarinesh.test` for Supabase.
-The script also creates the building office account `office` (a manager). Managers sign in the same way
-and get the manager screens: summary, requests, orders, bookings and units. Make anyone a manager with
+The script creates `ali` (unit 1204), `navid` (unit 907) and `admin` (whole building). Ali and Navid get the password 123456 for testing;
+the script asks you to type the Admin password. Managers and admins get the manager screens: summary, requests, orders,
+bookings and units. Roles: `resident`, `manager`, `admin`; change one with
 `update profiles set app_role = 'manager' where id = '<user id>';`
 
 ## Notes

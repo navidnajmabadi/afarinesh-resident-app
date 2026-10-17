@@ -28,7 +28,7 @@ async function loadManager(){
   const prof=Object.fromEntries(pf.data.map(p=>[p.id,p])),names={};
   uu.data.forEach(x=>{const p=prof[x.user_id];if(p&&p.app_role==='resident'){const a=(names[x.unit_code]=names[x.unit_code]||[]);if(!a.includes(p.full_name))a.push(p.full_name);}});
   const me=prof[user.id]||{};
-  MG={uid:user.id,me:{name:me.first_name||'مدیر',full:me.full_name||'دفتر ساختمان',manager:true},names,who:u=>(names[u]||[]).join('، '),
+  MG={uid:user.id,me:{name:me.first_name||'مدیر',full:me.full_name||'دفتر ساختمان',manager:true,admin:me.app_role==='admin'},names,who:u=>(names[u]||[]).join('، '),
     units:un.data.map(u=>({...u,balance:Number(u.balance)})).sort((a,b)=>a.balance-b.balance),requests:rq.data,orders:od.data,bookings:bk.data};
 }
 async function enterManager(){
