@@ -53,6 +53,7 @@ const P={
  send:'<path d="M20.5 3.5 3.5 10.5l7 3 3 7z"/><path d="m10.5 13.5 4-4"/>',
  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
  megaphone:'<path d="M4 10v4h3l7 4.5v-13L7 10z"/><path d="M17.5 9a4 4 0 0 1 0 6"/>',
+ bot:'<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4A2.5 2.5 0 0 1 4 13.5z"/><path d="m12 7.2.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>',
  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>',
  moon:'<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
  refresh:'<path d="M20 11a8 8 0 0 0-14.5-4.5L4 8M4 3.5V8h4.5M4 13a8 8 0 0 0 14.5 4.5L20 16M20 20.5V16h-4.5"/>',
@@ -316,15 +317,14 @@ function agoLabel(ts){const d=Date.now()-new Date(ts);if(d<120e3)return 'الا�
 function tehranStart(dayOffset,hhmm){const [y,m,d]=dayKey(Date.now()).split('-').map(Number);const b=new Date(Date.UTC(y,m-1,d+dayOffset));const [h,mi]=hhmm.split(':').map(Number);const z=n=>String(n).padStart(2,'0');
   return new Date(`${b.getUTCFullYear()}-${z(b.getUTCMonth()+1)}-${z(b.getUTCDate())}T${z(h)}:${z(mi)}:00+03:30`);}
 
-/* Slots: the next 7 days starting tomorrow. */
-const bookingDays=()=>Array.from({length:7},(_,i)=>{const d=tehranStart(i+1,'12:00');return {off:i+1,wk:F_WD.format(d)[0],num:F_D.format(d),full:F_WD.format(d),label:`${F_WD.format(d)} ${F_D.format(d)} ${F_M.format(d)}`};});
-const slotDate=(off,i)=>tehranStart(off,enDigits(SLOTS[i]));
-let TAKEN=new Set();
-const takenKey=(pid,ts)=>pid+'|'+new Date(ts).getTime();
-const slotFree=(pid,off,i,cat)=>{const d=slotDate(off,i);if(d-Date.now()<(cat==='hk'?24:1)*3600e3)return false;return !TAKEN.has(takenKey(pid,d));};
-function nextFree(p){for(let off=1;off<=7;off++)for(let i=0;i<SLOTS.length;i++)if(slotFree(p.id,off,i,p.cat))return `${off===1?'فردا':F_WD.format(slotDate(off,i))} ${SLOTS[i]}`;return 'تکمیل';}
-async function loadTaken(pid){const r=await SB.rpc('taken_slots',{p_provider:pid||null,p_from:new Date().toISOString(),p_to:new Date(Date.now()+14*864e5).toISOString()});if(r.error)throw r.error;
-  const keep=pid?[...TAKEN].filter(k=>!k.startsWith(pid+'|')):[];TAKEN=new Set(keep);r.data.forEach(x=>TAKEN.add(takenKey(x.provider_id,x.starts_at)));}
+/* Slots come from the database, which knows each place's opening hours, session length and capacity. */
+const SLOTS_BY={};
+let NEXT={};
+async function loadSlots(pid){const r=await SB.rpc('available_slots',{p_provider:pid,p_from:null,p_days:7});if(r.error)throw r.error;SLOTS_BY[pid]=r.data||[];}
+async function loadNext(){const r=await SB.rpc('next_free_slots');if(r.error)throw r.error;NEXT={};(r.data||[]).forEach(x=>{NEXT[x.provider_id]=x.starts_at;});}
+function nextFree(p){const t=NEXT[p.id];if(!t)return 'تکمیل';const k=dayKey(t),d=new Date(t);return `${k===dayKey(Date.now())?'امروز':k===dayKey(Date.now()+864e5)?'فردا':F_WD.format(d)} ${F_TIME.format(d)}`;}
+function slotDays(pid){const by={};(SLOTS_BY[pid]||[]).forEach(x=>{const k=dayKey(x.starts_at);(by[k]=by[k]||[]).push(x);});
+  return Object.keys(by).sort().map(k=>{const d=new Date(by[k][0].starts_at);return {key:k,wk:F_WD.format(d)[0],num:F_D.format(d),label:`${F_WD.format(d)} ${F_D.format(d)} ${F_M.format(d)}`,slots:by[k]};});}
 
 /* Row → screen mappers. */
 const PROV_IC={spa:'lotus',classes:'dumbbell',hk:'sparkle',spaces:'building'};
@@ -367,7 +367,7 @@ const mapNotif=n=>({ic:notifIcon(n.title),t:n.title,d:n.body||'',w:agoLabel(n.cr
 
 function dbError(e){const m=(e&&e.message)||'';
   const map={slot_taken:'این ساعت همین حالا رزرو شد. ساعت دیگری انتخاب کنید.',too_soon:'این زمان خیلی نزدیک است.',needs_day_ahead:'خانه‌داری را حداقل یک روز قبل رزرو کنید.',not_your_unit:'به این واحد دسترسی ندارید.',
-    not_cancellable:'این رزرو قابل لغو نیست.',not_changeable:'وضعیت این رزرو دیگر قابل تغییر نیست.',forbidden:'شما اجازه این کار را ندارید.',bad_amount:'مبلغ معتبر نیست.',payments_disabled:'پرداخت آنلاین فعلاً غیرفعال است.',empty_order:'سبد خالی است.',item_not_found:'یکی از آیتم‌ها دیگر موجود نیست.',bad_quantity:'تعداد معتبر نیست.'};
+    not_cancellable:'این رزرو قابل لغو نیست.',not_changeable:'وضعیت این رزرو دیگر قابل تغییر نیست.',bad_slot:'این زمان در برنامه‌ی کاری این مکان نیست.',already_booked:'این ساعت را از قبل برای این واحد رزرو کرده‌اید.',not_pending:'این پیشنهاد دیگر معتبر نیست.',proposal_expired:'این پیشنهاد منقضی شده است.',forbidden:'شما اجازه این کار را ندارید.',bad_amount:'مبلغ معتبر نیست.',payments_disabled:'پرداخت آنلاین فعلاً غیرفعال است.',empty_order:'سبد خالی است.',item_not_found:'یکی از آیتم‌ها دیگر موجود نیست.',bad_quantity:'تعداد معتبر نیست.'};
   for(const k in map)if(m.includes(k))return map[k];
   if(/fetch|network/i.test(m))return 'اتصال برقرار نشد. اینترنت را بررسی کنید.';return 'خطایی رخ داد. دوباره امتحان کنید.';}
 
@@ -377,11 +377,11 @@ async function loadCatalogue(){
   if(p.error)throw p.error;if(m.error)throw m.error;
   const ART_BY={'sp-1':'pool','sp-2':'arches','sp-3':'court','sp-4':'cup'};
   Object.keys(PROV).forEach(k=>PROV[k]=[]);
-  p.data.forEach(r=>{PROVBYID[r.id]=r;(PROV[r.category]=PROV[r.category]||[]).push({id:r.id,cat:r.category,n:r.name,r:r.description||'',ic:PROV_IC[r.category]||'cal',rate:Number(r.rating)||0,tags:r.audience||[],price:Number(r.price),dur:r.duration_min,place:r.place||'',art:ART_BY[r.id]});});
+  p.data.forEach(r=>{PROVBYID[r.id]=r;(PROV[r.category]=PROV[r.category]||[]).push({id:r.id,cat:r.category,n:r.name,r:r.description||'',ic:PROV_IC[r.category]||'cal',rate:Number(r.rating)||0,tags:r.audience||[],price:Number(r.price),dur:r.duration_min,place:r.place||'',cap:r.capacity||1,art:ART_BY[r.id]});});
   ALLPROV.length=0;ALLPROV.push(...Object.values(PROV).flat());
   for(const v of ['cafe','kitchen','carwash']){const rows=m.data.filter(x=>x.venue===v),cats=[...new Set(rows.map(x=>x.category))];
     MENU[v].cats=cats;MENU[v].items=cats.map(c=>rows.filter(x=>x.category===c).map(x=>[x.name,x.description||'',Number(x.price),x.id]));}
-  await loadTaken(null);
+  await loadNext();
 }
 async function loadState(unit){
   const {data:{user}}=await SB.auth.getUser();if(!user)throw new Error('no_session');

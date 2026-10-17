@@ -476,3 +476,52 @@ textarea.input{height:110px;padding:14px 16px;resize:none;line-height:1.6}
 .seg.sm4 button{font-size:12px;padding:0 4px}
 select.input{appearance:none;-webkit-appearance:none;cursor:pointer}
 @media (min-width:1024px){.tbadge{position:static;margin-inline-start:auto}}
+
+/* ============ آف‌بات (chat start page) ============ */
+.view.chatpage{gap:14px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 150px)}
+.sumstrip{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -20px;padding:2px 20px}
+.sumstrip::-webkit-scrollbar{display:none}
+.sumchip{flex:none;max-width:70%;display:inline-flex;align-items:baseline;gap:6px;padding:8px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--hair);font-size:13px}
+.sumchip b{font-weight:600;font-size:14px}
+.thread{display:flex;flex-direction:column;gap:12px;min-height:40vh}
+.cm{display:flex;gap:8px;align-items:flex-end;max-width:100%}
+.cm.u{justify-content:flex-start}
+.cm.a{justify-content:flex-start}
+.cm.u{flex-direction:row}
+.cm.a{flex-direction:row-reverse;align-self:flex-end}
+.cm.a .cstack{align-items:flex-end}
+.cav{flex:none;width:28px;height:28px;border-radius:50%;background:var(--gold-soft);color:var(--gold-ink);display:inline-flex;align-items:center;justify-content:center}
+.cstack{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:calc(100% - 40px)}
+.cb{padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.75;word-break:break-word}
+.cb ul{margin:4px 0;padding-inline-start:20px}
+.cm.u .cb{background:var(--cta);color:var(--cta-ink);border-end-end-radius:6px}
+.cm.a .cb{background:var(--surface);border:1px solid var(--hair);border-end-start-radius:6px}
+.typing{display:inline-flex;gap:5px;align-items:center;padding:14px 16px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.qrow{display:flex;gap:8px;flex-wrap:wrap}
+.cm.a .qrow{justify-content:flex-end}
+.qchip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--gold);color:var(--gold-ink);background:transparent;font-size:14px;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.qchip:hover{background:var(--gold-soft)}
+.qchip.go{border-color:var(--hair);color:var(--ink)}
+.pcard{border:1px solid var(--gold);border-radius:18px;padding:14px 16px;background:var(--surface);display:flex;flex-direction:column;gap:10px;width:min(100%,380px)}
+.pcard .pt{font-size:16px;font-weight:600}
+.pcard dl{margin:0;display:grid;gap:7px}
+.pcard dl div{display:flex;justify-content:space-between;gap:14px;font-size:14px}
+.pcard dt{color:var(--muted);flex:none}
+.pcard dd{margin:0;text-align:end;font-weight:500;min-width:0}
+.pbtns{display:flex;gap:8px}.pbtns .btn{flex:1}
+.pcard.approved{border-color:var(--ok)}
+.pcard.rejected,.pcard.expired,.pcard.failed{border-color:var(--hair);opacity:.8}
+.pdone{color:var(--ok);font-weight:600;font-size:14px;display:inline-flex;gap:6px;align-items:center}
+.perr{color:var(--bad);font-size:13.5px}
+.chatbar{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 72px);margin-inline:auto;max-width:700px;z-index:15;display:flex;gap:8px;align-items:flex-end;padding:8px 8px 8px 8px;border-radius:26px;background:var(--surface);border:1px solid var(--hair);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.chatbar textarea{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;font:inherit;font-size:16px;line-height:1.6;padding:9px 12px;max-height:130px;color:var(--ink)}
+.chatbar .send{flex:none;width:44px;height:44px;border-radius:50%;background:var(--cta);color:var(--cta-ink);display:inline-flex;align-items:center;justify-content:center}
+.chatbar .send:active{transform:scale(.95)}
+@media (min-width:1024px){.chatbar{right:276px;left:16px;bottom:22px}.view.chatpage{padding-bottom:130px}}
+/* onboarding question */
+.onb-ask{justify-content:center;align-items:center}
+.onb-ask .onb-body{align-items:center;text-align:center;max-width:420px;margin:auto}
+.onb-ask .onb-ic{margin-bottom:6px}

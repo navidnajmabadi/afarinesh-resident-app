@@ -7,11 +7,12 @@ Responsive resident app (desktop and mobile, iPhone-first) for the Afarinesh Sab
 Sign in with your unit code and the password issued to you. See `supabase/README.md` for how accounts are created.
 
 ## What works
-- Welcome screens on first login, plus a short guided tour the first time each section opens (Profile → راهنمای برنامه replays it)
+- First login asks whether you want the short guide; skipping it skips every tour for good (Profile → راهنمای برنامه shows it again)
+- **آف‌بات**, the start page: a chat assistant (OpenAI, Persian and English, Grok-like personality) that books, orders and sends requests from plain sentences. It shows a confirm card first; nothing happens until you approve, and the slot is held for 3 minutes meanwhile
 - Services ordered by how much each resident uses them; the most used appear first on Services and Home
 - Login with validation, building rules consent, password change, logout
 - Home: balance, live request tracking, upcoming bookings, announcements
-- Booking flow (time → details → payment) for spa, classes, housekeeping and spaces, with cancellation and refunds
+- Booking flow (time → details → payment) for spa, classes, housekeeping and spaces, using each place's real opening hours and capacity (the pool takes several people per slot), with cancellation and refunds
 - Service requests (technical, rent & sale) with photo upload and status updates
 - Café, kitchen and car-wash ordering with a cart
 - Activity tab to follow every request, booking and order
@@ -27,7 +28,7 @@ Data lives in a Supabase database (real login, per-unit privacy rules, live upda
 Accounts with the manager or admin role (`admin`) see: summary, requests, orders, bookings and units. Staff assign a request, change its status, mark orders delivered, and mark or cancel bookings (cancelling refunds in full). Residents are notified automatically.
 
 ## Files
-- `index.html`, `styles.css`, `app.js`, `manager.js`, `config.js` — the app and its public Supabase settings
+- `index.html`, `styles.css`, `app.js`, `chat.js`, `manager.js`, `config.js` — the app and its public Supabase settings
 - `supabase/` — database structure, rules, server functions and sample data
 - `shared.js` — sample data, state, charts and report layout (used by the app and the report)
 - `report.html` — printable A4 weekly report, receipts and documents

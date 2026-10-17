@@ -1,0 +1,7 @@
+# Minimal project file so the Supabase CLI can deploy the function in supabase/functions/.
+project_id = "afarinesh"
+
+# The function checks the signed-in resident itself (it calls Supabase Auth with the resident's token),
+# so the gateway-level JWT check is switched off. This also works with the newer API keys.
+[functions.assistant]
+verify_jwt = false

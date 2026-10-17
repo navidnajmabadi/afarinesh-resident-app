@@ -12,7 +12,7 @@ const mIcon=r=>r.kind==='tech'?(REQ_IC[r.type]||'wrench'):r.kind==='rent'?'key':
 const mTitle=r=>(r.kind==='tech'?'خدمات فنی · ':r.kind==='message'?'پیام · ':'')+r.type;
 const mOpenStates=['received','assigned','in_progress'];
 const mRow=(attr,ic,title,sub,right='')=>`<button class="act press" ${attr}><div class="tile-ic neutral">${I(ic)}</div><div class="stack"><span class="t ellipsis">${title}</span><span class="m ellipsis">${sub}</span></div>${right}</button>`;
-const mBal=u=>`<span class="amt num" style="${u.balance<0?'color:var(--bad)':''}">${u.balance<0?'−':''}${mil(u.balance)} <small>م</small></span>`;
+const mBal=u=>`<span class="amt num" style="${u.balance<0?'color:var(--bad)':''}"><bdi dir="ltr">${u.balance<0?"−":""}${mil(u.balance)}</bdi> <small>م</small></span>`;
 const mSeg=(items,cur,act)=>`<div class="seg">${items.map(([k,l])=>`<button class="${cur===k?'on':''}" data-act="${act}:${k}">${l}</button>`).join('')}</div>`;
 
 function MTABS(){const n=MG?MG.requests.filter(r=>r.status==='received').length:0;
@@ -134,13 +134,13 @@ MSH.mbcancel=id=>{const b=MG.bookings.find(x=>x.id===id);const p=PROVBYID[b.prov
 
 MSH.munit=code=>{const u=MG.units.find(x=>x.code===code);if(!u)return ['واحد',empty('پیدا نشد.')];
   return ['واحد '+faDigits(code),`
-   <div style="text-align:center"><span class="m">مانده حساب</span><div class="big-num num" style="${u.balance<0?'color:var(--bad)':''}">${u.balance<0?'−':''}${T(u.balance)}<small>تومان ${u.balance<0?'بدهکار':'بستانکار'}</small></div></div>
+   <div style="text-align:center"><span class="m">مانده حساب</span><div class="big-num num" style="${u.balance<0?'color:var(--bad)':''}"><bdi dir="ltr">${u.balance<0?"−":""}${T(u.balance)}</bdi><small>تومان ${u.balance<0?'بدهکار':'بستانکار'}</small></div></div>
    <div class="card glass" style="padding:4px 16px"><div class="kv"><span>ساکنین</span><span>${esc(MG.who(code)||'—')}</span></div><div class="kv"><span>نوع</span><span>${roleLabel(u)}</span></div></div>
    <span class="eyebrow">آخرین تراکنش‌ها</span><div id="unit-tx" data-unit="${code}"><div class="spin"></div></div>`];};
 async function showUnitTx(){const box=document.getElementById('unit-tx');if(!box)return;
   const {data,error}=await SB.from('transactions').select('*').eq('unit_code',box.dataset.unit).order('created_at',{ascending:false}).limit(8);
   if(error){box.innerHTML=empty('بارگذاری نشد.');return;}
-  box.innerHTML=data.length?`<div class="list glass">${data.map(x=>{const m=mapTx(x);return `<div><span class="tile-ic neutral">${I(m.ic,'sm')}</span><div class="stack"><span class="t ellipsis">${esc(m.t)}</span><span class="m">${m.dt}</span></div><span class="amt num ${m.a>0?'in':''}">${m.a>0?'+':'−'}${T(m.a)}</span></div>`;}).join('')}</div>`:empty('تراکنشی نیست.');}
+  box.innerHTML=data.length?`<div class="list glass">${data.map(x=>{const m=mapTx(x);return `<div><span class="tile-ic neutral">${I(m.ic,'sm')}</span><div class="stack"><span class="t ellipsis">${esc(m.t)}</span><span class="m">${m.dt}</span></div><span class="amt num ${m.a>0?'in':''}"><bdi dir="ltr">${m.a>0?"+":"−"}${T(m.a)}</bdi></span></div>`;}).join('')}</div>`:empty('تراکنشی نیست.');}
 
 /* ---------- actions ---------- */
 Object.assign(ACTM,{

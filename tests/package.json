@@ -1,1 +1,1 @@
-{ "name": "afarinesh-db-tests", "private": true, "type": "module", "scripts": { "test": "node db.test.mjs" }, "devDependencies": { "@electric-sql/pglite": "^0.2.0" } }
+{ "name": "afarinesh-db-tests", "private": true, "type": "module", "scripts": { "test": "node db.test.mjs && node assistant.test.mjs", "test:assistant": "node assistant.test.mjs" }, "devDependencies": { "@electric-sql/pglite": "^0.2.0" } }
