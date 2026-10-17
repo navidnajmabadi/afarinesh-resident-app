@@ -30,9 +30,11 @@ async function askAdminPassword() {
   }
 }
 
-const KEY = process.env.SUPABASE_SECRET_KEY || await askHidden('Secret key (typing is hidden): ');
+const KEY = (process.env.SUPABASE_SECRET_KEY || await askHidden('Secret key (typing is hidden): ')).replace(/\s+/g, '').replace(/^["']+|["']+$/g, '');
 if (!KEY) { console.error('No key given.'); process.exit(1); }
-if (KEY.startsWith('sb_publishable_')) { console.error('That is the publishable key. Use the secret key (Project Settings → API Keys).'); process.exit(1); }
+console.log(`  Received ${KEY.length} characters, starting with "${KEY.slice(0, 10)}".`);
+if (KEY.startsWith('sb_publishable_')) { console.error('That is the publishable key. Use the secret key (Project Settings → API Keys → Secret keys).'); process.exit(1); }
+if (!/^(sb_secret_|eyJ)/.test(KEY)) { console.error('That does not look like a Supabase secret key. It should start with sb_secret_ (copy it again, only the key itself).'); process.exit(1); }
 
 const H = { apikey: KEY, 'Content-Type': 'application/json' };
 if (KEY.startsWith('eyJ')) H.Authorization = 'Bearer ' + KEY;       // legacy JWT-style service_role key
@@ -56,6 +58,14 @@ const UNITS = [
 /* ---------- 1. units ---------- */
 {
   const r = await up('units', UNITS, 'code', 'resolution=ignore-duplicates');
+  if (r.status === 401 || r.status === 403) {
+    console.error('\nSupabase rejected this key. Usual reasons:');
+    console.error('  - it is an old key that you already deleted or replaced');
+    console.error('  - it belongs to another Supabase project (this app uses ' + BASE.replace('https://', '').split('.')[0] + ')');
+    console.error('  - it was copied with extra characters');
+    console.error('Fix: Supabase → Project Settings → API Keys → Secret keys → create a new key, copy it once, run this again.');
+    process.exit(1);
+  }
   if (!r.ok) { console.error('Could not reach the database or the units table:', r.status, await r.text()); process.exit(1); }
 }
 
