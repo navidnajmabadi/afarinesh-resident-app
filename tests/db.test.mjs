@@ -17,7 +17,7 @@ export async function makeDb() {
     grant usage on schema public, auth to anon, authenticated;`);
   const run = f => db.exec(fs.readFileSync(R + f, 'utf8').replace('create extension if not exists pgcrypto;', ''));
   await run('migrations/20261012000000_init.sql');
-  for (const f of ['20261012010000_actions.sql', '20261013000000_manager.sql', '20261017000000_roles.sql', '20261018000000_schedules_assistant.sql']) {
+  for (const f of ['20261012010000_actions.sql', '20261013000000_manager.sql', '20261017000000_roles.sql', '20261018000000_schedules_assistant.sql', '20261019000000_assistant_context.sql']) {
     await run('migrations/' + f); await run('migrations/' + f);                  // twice: must be re-runnable
   }
   await db.exec(`grant all on all tables in schema public to authenticated; grant select on all tables in schema public to anon;`);
@@ -266,6 +266,11 @@ if (process.argv[1] && process.argv[1].endsWith('db.test.mjs')) {
   r = await as(A, `select ai_menu('kitchen') m`); t('assistant can list a menu', r.ok && r.rows[0].m.length >= 5);
   await as(A, `select ai_log('1204','user','سلام')`); await as(A, `select ai_log('1204','assistant','سلام! چه خبر؟','{"chips":["a"]}'::jsonb)`);
   r = await as(A, `select ai_history('1204', 10) h`); t('chat history comes back in order', r.ok && r.rows[0].h.length === 2 && r.rows[0].h[0].role === 'user' && r.rows[0].h[1].meta.chips[0] === 'a', JSON.stringify(r).slice(0, 200));
+  await as(A, `select ai_log('1204','assistant','با جزئیات','{"trace":[{"role":"tool","content":"x"}],"chips":["b"]}'::jsonb)`);
+  r = await as(A, `select ai_history('1204', 10) h`);
+  t('the lookup trace is hidden from the app', r.ok && r.rows[0].h.every(m => !m.meta || !('trace' in m.meta)), JSON.stringify(r).slice(0, 200));
+  r = await as(A, `select ai_history('1204', 10, true) h`);
+  t('the server can read the trace to continue a conversation', r.ok && r.rows[0].h.some(m => m.meta && Array.isArray(m.meta.trace)), JSON.stringify(r).slice(0, 200));
   r = await as(B, `select ai_history('407', 10) h`); t("another resident's chat is not visible", r.ok && r.rows[0].h.length === 0);
   await db.exec(`update app_settings set value='2'::jsonb where key='ai_daily_limit'`);
   await as(A, `select ai_log('1204','user','دوم')`);

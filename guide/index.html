@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>راهنمای آفرینش سبز</title>
+<style>
+:root{--bg:#f6f6f3;--ink:#1c1f1d;--mut:#6b716d;--card:#fff;--line:#e4e5e0;--acc:#2f7d5b}
+@media(prefers-color-scheme:dark){:root{--bg:#121413;--ink:#ecefed;--mut:#9aa19d;--card:#1b1e1c;--line:#2a2e2b;--acc:#5fc79b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.9 system-ui,"Vazirmatn",Tahoma,sans-serif}
+main{max-width:760px;margin:0 auto;padding:24px 16px 64px}
+section{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;margin:0 0 20px}
+h1{font-size:28px;margin:8px 0 4px}h2{font-size:21px;margin:0 0 12px}p{margin:8px 0;color:var(--mut)}p b,li b{color:var(--ink)}
+.tag{display:inline-block;background:var(--acc);color:#fff;border-radius:99px;padding:2px 12px;font-size:13px}
+ol,ul{padding-inline-start:22px;color:var(--mut)}li{margin:6px 0}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}
+.flow span{border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:14px}
+.flow i{color:var(--acc);font-style:normal}
+.chat{background:var(--bg);border-radius:14px;padding:14px;margin:12px 0}
+.u,.a{max-width:85%;padding:8px 12px;border-radius:14px;margin:6px 0;font-size:15px}
+.u{background:var(--acc);color:#fff;margin-inline-start:auto}.a{background:var(--card);border:1px solid var(--line)}
+.shots{display:flex;gap:12px;flex-wrap:wrap}.shots img{flex:1 1 220px;max-width:100%;border-radius:14px;border:1px solid var(--line)}
+.box{border-inline-start:4px solid var(--acc);padding:4px 14px;margin:12px 0;background:var(--bg);border-radius:8px}
+a{color:var(--acc)}
+</style></head><body><main>
+
+<section>
+<span class="tag">صفحه ۱ از ۳</span>
+<h1>این چیست؟</h1>
+<p>«آفرینش سبز» یک <b>برنامهٔ ساکنان برج</b> است. هر ساکن با نام کاربری و رمز وارد می‌شود و همه‌چیز را از یک جا انجام می‌دهد:</p>
+<ul>
+<li><b>رزرو</b> استخر، اسکواش، سالن و میز کافه</li>
+<li><b>سفارش</b> غذا و نوشیدنی از کافه و آشپزخانه</li>
+<li><b>درخواست</b> تعمیر و خدمات و پیگیری آن</li>
+<li><b>مالی:</b> شارژ، پرداخت‌ها و گزارش هفتگی PDF (همه به تومان)</li>
+</ul>
+<div class="box">هر ساکن فقط اطلاعات واحد خودش را می‌بیند. مدیر ساختمان و ادمین، همه را می‌بینند و درخواست‌ها را رسیدگی می‌کنند.</div>
+<p>برنامه روی گوشی و کامپیوتر کار می‌کند، حالت روشن و تیره دارد و اطلاعاتش واقعی و مشترک است. اگر علی ساعتی را رزرو کند، همان لحظه برای نوید پر می‌شود.</p>
+<p><a href="../">باز کردن برنامه</a></p>
+<div class="shots"><img src="login.png" alt="صفحه ورود"><img src="report.png" alt="گزارش هفتگی"></div>
+</section>
+
+<section>
+<span class="tag">صفحه ۲ از ۳</span>
+<h1>چطور کار می‌کند؟</h1>
+<p>سه بخش دارد و هر کدام ساده است:</p>
+<ol>
+<li><b>ظاهر برنامه:</b> روی GitHub Pages، رایگان و همیشه آنلاین.</li>
+<li><b>پایگاه داده و ورود:</b> روی Supabase (حساب شخصی شما). رزروها، سفارش‌ها و پرداخت‌ها همه اینجا ذخیره می‌شود. قوانین پایگاه داده جلوی دیدن اطلاعات دیگران را می‌گیرد.</li>
+<li><b>آف‌بات (دستیار هوشمند):</b> یک چت که با OpenAI حرف می‌زند و به اطلاعات واقعی ساختمان وصل است.</li>
+</ol>
+<h2>آف‌بات چطور رزرو می‌کند؟</h2>
+<div class="flow"><span>ساکن پیام می‌دهد</span><i>←</i><span>آف‌بات ساعت‌های خالی را از سیستم می‌خواند</span><i>←</i><span>پیشنهاد می‌دهد</span><i>←</i><span>ساکن «تأیید» را می‌زند</span><i>←</i><span>رزرو ثبت می‌شود</span></div>
+<div class="chat"><div class="u">استخر پنجشنبه ۹ شب</div><div class="a">ساعت ۹ شب جا هست. این کارت رو تأیید کن تا رزرو بشه.</div></div>
+<div class="box"><b>نکتهٔ مهم:</b> آف‌بات خودش چیزی را ثبت نمی‌کند. فقط پیشنهاد می‌دهد و تا تأیید شما نیاید، هیچ رزروی نمی‌شود. بعد از پیشنهاد، ساعت ۳ دقیقه برای شما نگه داشته می‌شود تا کس دیگری نگیرد.</div>
+<p>به فارسی و انگلیسی جواب می‌دهد و لحنش صمیمی و رک است، شبیه Grok.</p>
+</section>
+
+<section>
+<span class="tag">صفحه ۳ از ۳</span>
+<h1>الان کجاییم و قدم بعدی چیست؟</h1>
+<div class="box">این نسخه فقط «هوش مصنوعی را روشن کرده». هنوز <b>هوشمند کامل نیست</b>. آف‌بات وصل است و کار می‌کند، اما هنوز اشتباه می‌کند.</div>
+<h2>مشکلی که دیدیم</h2>
+<ul>
+<li>گاهی بین دو پیام، چیزی را که خودش پیدا کرده بود فراموش می‌کرد و بعد از «آره» رزرو نمی‌شد.</li>
+<li>گاهی روز هفته را اشتباه حساب می‌کرد (مثلاً «چهارشنبه»).</li>
+</ul>
+<h2>قدم بعدی: هوشمندتر کردن</h2>
+<ol>
+<li><b>حافظهٔ گفتگو:</b> نتیجهٔ جستجوهایش (ساعت‌ها، منو) را تا پیام بعدی نگه دارد. در حال ساخت.</li>
+<li><b>فهم تاریخ:</b> «چهارشنبه»، «فردا» و «۲۳ مهر» را خودِ سیستم محاسبه کند، نه مدل.</li>
+<li><b>پیشنهاد جایگزین:</b> وقتی ساعت پر است، نزدیک‌ترین ساعت خالی را پیشنهاد دهد.</li>
+<li><b>صفحه‌های ادمین:</b> افزودن فضا، ساعت و ظرفیت، منو و ساکنان، بدون نیاز به کدنویسی.</li>
+<li><b>پرداخت واقعی</b> به جای پرداخت آزمایشی، و <b>ارسال ایمیل و پیامک</b>.</li>
+<li><b>شناخت بهتر هر ساکن:</b> مثلاً ساعت‌های همیشگی او را به یاد داشته باشد.</li>
+</ol>
+<p>خلاصه: برنامه کامل و زنده است، آف‌بات روشن است، و مرحلهٔ بعد «باهوش و قابل‌اعتماد کردن» آن است.</p>
+</section>
+</main></body></html>
