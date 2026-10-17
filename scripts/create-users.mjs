@@ -206,13 +206,22 @@ const SAMPLE = {
     notifications: [{ title: 'رزرو قطعی شد', body: 'استخر', created_at: ago(10) }],
   },
 };
+// Columns that cannot be empty and normally get a default from the database.
+const DEFAULTS = {
+  bookings: { status: 'confirmed', price: 0, paid_by: null, note: null },
+  requests: { status: 'received', assignee: null },
+  orders: { status: 'preparing', delivery: 'unit' },
+  notifications: { body: null },
+  transactions: { description: null },
+};
 let filled = 0;
 for (const [unit, tables] of Object.entries(SAMPLE)) {
   for (const [table, list] of Object.entries(tables)) {
     const has = await (await api('rest', `${table}?select=unit_code&unit_code=eq.${unit}&limit=1`)).json();
     if (has.length) continue;
-    const keys = [...new Set(list.flatMap(Object.keys))];                       // every row must have the same fields
-    const body = list.map(x => ({ unit_code: unit, ...Object.fromEntries(keys.map(k => [k, x[k] ?? null])) }));
+    const rows = list.map(x => ({ ...(DEFAULTS[table] || {}), ...x }));          // fill the columns that must never be empty
+    const keys = [...new Set(rows.flatMap(Object.keys))];                         // every row must have the same fields
+    const body = rows.map(x => ({ unit_code: unit, ...Object.fromEntries(keys.map(k => [k, x[k] ?? null])) }));
     const r = await api('rest', table, { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) });
     if (!r.ok) { console.error(`${table} (unit ${unit}):`, await r.text()); process.exit(1); }
     filled++;
