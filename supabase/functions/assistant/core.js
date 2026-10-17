@@ -39,7 +39,7 @@ CHARACTER (inspired by Grok)
 - Short messages: one to four sentences unless the resident asks for depth. Answer first, joke second.
 - Honest: say you don't know when you don't. Never invent prices, times, availability or rules. Use the tools.
 - Light teasing is welcome when the mood is light. Switch the humour off completely for problems, money stress, injuries, safety or complaints, and be warm and practical.
-- Never insult the resident, never be crude, no jabs about politics or religion. Roasting yourself is fine.
+- If the resident insults you, shrug it off with one short, witty, good-natured comeback and carry on helping. Never insult back, never be crude, no jabs about politics or religion. Roasting yourself is fine.
 - At most one emoji per message, usually none.
 
 LANGUAGE
@@ -49,7 +49,7 @@ LANGUAGE
 HOW YOU WORK IN THE BUILDING
 - Use tools for every fact about the building: services, prices, free slots, menus, balance, bookings, rules. Never answer these from memory.
 - You cannot book, order or send anything yourself. You call propose_booking, propose_order or propose_request. That shows the resident a confirm card. Nothing happens until they tap Approve. After proposing, tell them in one line to check the card and approve. Never say something is done before they approve. Only one proposal at a time.
-- BOOKING (pool, squash, hall, café table, spa, classes, housekeeping): find the place with list_services. If the resident did not say which place, which day or which time, ask for exactly what is missing and call quick_replies with the options. Always call get_slots before offering times and only offer times it returned. If the resident named a time and it is free, go straight to propose_booking. If it is not free, offer the nearest free times. When a slot has capacity above 1, mention how many spots are left. Housekeeping must be booked at least a day ahead.
+- BOOKING (pool, squash, hall, café table, spa, classes, housekeeping): find the place with list_services (you can pass its id or its name to get_slots and propose_booking). Use the CALENDAR below to turn words like «چهارشنبه», «فردا», «tomorrow» into a date; never work out weekdays yourself. If the resident did not say which place, which day or which time, ask for exactly what is missing and call quick_replies with the options. Always call get_slots before offering times and only offer times it returned. If the resident named a place, a day and a time and it is free, call propose_booking IMMEDIATELY. Do not ask "shall I book it?": the confirm card is the confirmation. If an earlier message of yours offered one option and the resident says yes (آره، باشه، okay), call propose_booking at once using the EARLIER LOOKUPS. If it is not free, offer the nearest free times. If a tool returns an error, fix the input and try once more; never tell the resident the place is "not recognised" or blame them, and never show raw error text. When a slot has capacity above 1, mention how many spots are left. Housekeeping must be booked at least a day ahead.
 - ORDERS (café, kitchen, car wash): if the venue is missing ask "café or kitchen?" (with quick_replies). Call list_menu, show at most eight items with prices, ask which and how many, then propose_order. For the café ask whether to deliver to the unit or serve in the café if it is unclear.
 - REPAIRS and MESSAGES: work out the kind, type and urgency from the resident's words, ask only for what is missing, then propose_request. Keep the description in the resident's own words.
 - MONEY: use get_account for balance and history. You cannot take payments in chat: offer open_screen with "pay". For the weekly report use open_screen with "report".
@@ -63,15 +63,17 @@ export const TOOLS = [
   { name: 'list_services', description: 'Bookable places and services with ids, prices for this resident, session length, opening hours, capacity, audience and place.',
     parameters: { type: 'object', properties: { category: { type: 'string', enum: ['spa', 'classes', 'hk', 'spaces'], description: 'spa = spa and beauty, classes = courses, hk = housekeeping, spaces = pool, squash, hall, café table' } } } },
   { name: 'get_slots', description: 'Free time slots of one place. Times are in Tehran time. Always call this before offering times.',
-    parameters: { type: 'object', required: ['provider_id'], properties: {
-      provider_id: { type: 'string' }, from_date: { type: 'string', description: 'YYYY-MM-DD in Tehran, default today' }, days: { type: 'integer', description: '1 to 7, default 3' },
+    parameters: { type: 'object', properties: {
+      provider_id: { type: 'string', description: 'id or place name (استخر, اسکواش, pool…)' }, from_date: { type: 'string', description: 'YYYY-MM-DD in Tehran, default today' }, days: { type: 'integer', description: '1 to 7, default 3' },
       after: { type: 'string', description: 'only starts at or after this HH:MM' }, before: { type: 'string', description: 'only starts before this HH:MM' } } } },
   { name: 'list_menu', description: 'Menu items of the café, the kitchen or the car wash with ids and prices.',
     parameters: { type: 'object', required: ['venue'], properties: { venue: { type: 'string', enum: ['cafe', 'kitchen', 'carwash'] }, category: { type: 'string' } } } },
   { name: 'building_info', description: 'Building rules and phone numbers.', parameters: { type: 'object', properties: {} } },
-  { name: 'propose_booking', description: 'Show the resident a confirm card to book a slot. starts_at must be a start time returned by get_slots.',
-    parameters: { type: 'object', required: ['provider_id', 'starts_at', 'language'], properties: {
-      provider_id: { type: 'string' }, starts_at: { type: 'string', description: 'ISO time exactly as returned by get_slots' },
+  { name: 'propose_booking', description: 'Show the resident a confirm card to book a slot. Give the place plus date and time (or an exact starts_at from get_slots). The time is checked against real availability.',
+    parameters: { type: 'object', required: ['language'], properties: {
+      provider_id: { type: 'string', description: 'id from list_services/get_slots, or the place name' }, place: { type: 'string', description: 'place name such as استخر or pool (alternative to provider_id)' },
+      date: { type: 'string', description: 'YYYY-MM-DD Tehran date, from the CALENDAR' }, time: { type: 'string', description: 'HH:MM Tehran start time, e.g. 21:00' },
+      starts_at: { type: 'string', description: 'optional: ISO time exactly as returned by get_slots (use date+time instead when easier)' },
       payment: { type: 'string', enum: ['account', 'card'] }, note: { type: 'string' }, language: { type: 'string', enum: ['fa', 'en'] } } } },
   { name: 'propose_order', description: 'Show the resident a confirm card for a food or car wash order. item_id values come from list_menu.',
     parameters: { type: 'object', required: ['venue', 'items', 'language'], properties: {
@@ -94,14 +96,22 @@ const URGENCY = { low: ['کم', 'Low'], normal: ['عادی', 'Normal'], high: ['
 const DELIVERY = { unit: ['تحویل در واحد', 'Deliver to the unit'], cafe: ['سرو در کافی‌شاپ', 'Serve in the café'], parking: ['در پارکینگ', 'In the parking'] };
 const idx = lang => (lang === 'en' ? 1 : 0);
 
-function systemPrompt(unit, now, account) {
+function calendar(now) {
+  const fa = dtf('fa-IR-u-ca-persian', { weekday: 'long', day: 'numeric', month: 'long' });
+  return Array.from({ length: 10 }, (_, i) => { const d = new Date(now.getTime() + i * 864e5); return `${i === 0 ? 'today' : i === 1 ? 'tomorrow' : ''} ${F.ymd.format(d)} = ${fa.format(d)} (${dtf('en-GB', { weekday: 'long' }).format(d)})`.trim(); }).join('\n');
+}
+
+function systemPrompt(unit, now, account, lookups) {
   const d = now.toISOString();
   const tomorrow = new Date(now.getTime() + 864e5).toISOString();
   return `${PERSONA}
 
 CONTEXT
 - Now: ${localFa(d)} (${localEn(d)}), Tehran time. Tomorrow is ${localFa(tomorrow)}. In Iran the week starts on Saturday and Friday is the weekend. Today's date in Tehran is ${F.ymd.format(now)}.
-- Resident: ${account?.name || 'unknown name'}, unit ${unit} (${account?.role === 'tenant' ? 'tenant' : 'owner'}; owners get 10% off paid bookings). Currency: Toman.`;
+- Resident: ${account?.name || 'unknown name'}, unit ${unit} (${account?.role === 'tenant' ? 'tenant' : 'owner'}; owners get 10% off paid bookings). Currency: Toman.
+
+CALENDAR (Tehran)
+${calendar(now)}${lookups ? `\n\nEARLIER LOOKUPS in this conversation (data you fetched a moment ago; ids and times are exact):\n${lookups}` : ''}`;
 }
 
 /* ---------- tools ---------- */
@@ -119,6 +129,16 @@ const friendly = m => {
   return 'the action could not be prepared';
 };
 
+const norm = x => String(x || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[\s‌\-_]/g, '').toLowerCase();
+const ALIAS = { pool: 'استخر', swimming: 'استخر', squash: 'اسکواش', hall: 'سالن', cafe: 'کافه', gym: 'باشگاه', spa: 'اسپا' };
+function findService(all, key) {
+  const k0 = String(key || '').trim(); if (!k0) return null;
+  const byId = all.find(s => s.id === k0); if (byId) return byId;
+  const k = norm(ALIAS[k0.toLowerCase()] || k0);
+  return all.find(s => norm(s.name) === k) || all.find(s => norm(s.name).includes(k) || k.includes(norm(s.name))) || null;
+}
+const slotView = r => ({ starts_at: r.starts_at, date: F.ymd.format(new Date(r.starts_at)), time: hhmm(r.starts_at), fa: localFa(r.starts_at), en: localEn(r.starts_at), free: r.free, capacity: r.capacity });
+
 async function runTool(name, args, ctx) {
   const { sb, unit, ui } = ctx;
   args = args && typeof args === 'object' ? args : {};
@@ -131,12 +151,15 @@ async function runTool(name, args, ctx) {
     case 'get_slots': {
       const days = Math.min(Math.max(parseInt(args.days) || 3, 1), 7);
       const from = /^\d{4}-\d{2}-\d{2}$/.test(args.from_date || '') ? args.from_date : null;
-      const rows = await rpc(sb, 'available_slots', { p_provider: String(args.provider_id || ''), p_from: from, p_days: days });
+      const all = ctx.services || (ctx.services = await rpc(sb, 'ai_services', { p_unit: unit }));
+      const svc = findService(all, args.provider_id || args.place);
+      if (!svc) throw new Error('provider_not_found');
+      const rows = await rpc(sb, 'available_slots', { p_provider: svc.id, p_from: from, p_days: days });
       const ok = /^\d{2}:\d{2}$/;
       let list = (rows || []).filter(r => r.free > 0);
       if (ok.test(args.after || '')) list = list.filter(r => hhmm(r.starts_at) >= args.after);
       if (ok.test(args.before || '')) list = list.filter(r => hhmm(r.starts_at) < args.before);
-      return { found: list.length, slots: list.slice(0, 14).map(r => ({ starts_at: r.starts_at, fa: localFa(r.starts_at), en: localEn(r.starts_at), free: r.free, capacity: r.capacity })) };
+      return { provider_id: svc.id, place: svc.name, found: list.length, slots: list.slice(0, 14).map(slotView) };
     }
     case 'list_menu': {
       const items = await rpc(sb, 'ai_menu', { p_venue: String(args.venue || '') });
@@ -146,10 +169,20 @@ async function runTool(name, args, ctx) {
     case 'propose_booking': {
       const lang = args.language === 'en' ? 'en' : 'fa';
       const all = ctx.services || (ctx.services = await rpc(sb, 'ai_services', { p_unit: unit }));
-      const svc = all.find(s => s.id === args.provider_id);
+      const svc = findService(all, args.provider_id || args.place);
       if (!svc) throw new Error('provider_not_found');
-      const starts = new Date(args.starts_at);
-      if (isNaN(starts)) throw new Error('bad_slot');
+      let starts = args.starts_at ? new Date(args.starts_at) : null;
+      const wantDate = /^\d{4}-\d{2}-\d{2}$/.test(args.date || '') ? args.date : (starts && !isNaN(starts) ? F.ymd.format(starts) : null);
+      const wantTime = /^\d{1,2}:\d{2}$/.test(args.time || '') ? args.time.padStart(5, '0') : (starts && !isNaN(starts) ? hhmm(starts.toISOString()) : null);
+      if (!wantDate || !wantTime) throw new Error('bad_slot');
+      const rows = (await rpc(sb, 'available_slots', { p_provider: svc.id, p_from: wantDate, p_days: 2 })) || [];
+      const same = rows.filter(r => F.ymd.format(new Date(r.starts_at)) === wantDate);
+      const hit = same.find(r => hhmm(r.starts_at) === wantTime);
+      if (!hit || hit.free <= 0) {
+        const near = same.filter(r => r.free > 0).sort((x, y) => Math.abs(hhmm(x.starts_at).replace(':', '') - wantTime.replace(':', '')) - Math.abs(hhmm(y.starts_at).replace(':', '') - wantTime.replace(':', ''))).slice(0, 4).map(slotView);
+        return { ok: false, error: hit ? 'that slot is full' : 'that is not a start time of this place', nearest_free_that_day: near, next: 'Offer these nearest times (use quick_replies). Do not mention any error.' };
+      }
+      starts = new Date(hit.starts_at);
       const pay = args.payment === 'card' ? 'card' : 'account';
       const price = Number(svc.price_for_you);
       const p = await rpc(sb, 'create_proposal', { p_unit: unit, p_action: 'book',
@@ -200,6 +233,20 @@ async function runTool(name, args, ctx) {
 }
 
 /* ---------- one conversation turn ---------- */
+/* what the assistant looked up earlier, kept compact and replayed as context on the next turn */
+function compactTrace(trace) {
+  return trace.slice(-4).map(t => {
+    if (t.tool === 'get_slots' && t.result?.slots) return { tool: t.tool, provider_id: t.result.provider_id, place: t.result.place, slots: t.result.slots.slice(0, 10).map(x => `${x.date} ${x.time} (free ${x.free}/${x.capacity})`) };
+    if (t.tool === 'list_services' && Array.isArray(t.result)) return { tool: t.tool, places: t.result.slice(0, 20).map(x => `${x.id} = ${x.name}`) };
+    if (t.tool === 'list_menu' && Array.isArray(t.result)) return { tool: t.tool, venue: t.args?.venue, items: t.result.slice(0, 20).map(x => `${x.item_id} = ${x.name} (${x.price})`) };
+    return null;
+  }).filter(Boolean);
+}
+function lookupsText(history) {
+  const recent = history.filter(m => m.role === 'assistant' && Array.isArray(m.meta?.trace) && m.meta.trace.length).slice(-2);
+  const txt = recent.flatMap(m => m.meta.trace).map(t => JSON.stringify(t)).join('\n');
+  return txt.slice(-3500);
+}
 const FALLBACK = { fa: 'یه لحظه ذهنم قفل کرد. دوباره بگو؟', en: 'My brain froze for a second. Say that again?' };
 const LIMIT = { fa: 'امروز کلی با هم حرف زدیم و سهمیه‌ی پیام‌هات تموم شد. فردا دوباره برگرد، قول می‌دم هنوز اینجام.', en: "We've talked a lot today and your message allowance is used up. Come back tomorrow, I promise I'll still be here." };
 const looksFarsi = s => /[؀-ۿ]/.test(s);
@@ -215,18 +262,21 @@ export async function handle({ sb, body, openai, now = new Date(), maxRounds = 6
   catch (e) { return { error: /not_your_unit/.test(e.message) ? 'forbidden' : 'server_error' }; }
   if (!allowed) return { reply: LIMIT[lang], limited: true };
 
-  const history = (await rpc(sb, 'ai_history', { p_unit: unit, p_limit: 16 })) || [];
+  let history;
+  try { history = (await rpc(sb, 'ai_history', { p_unit: unit, p_limit: 16, p_with_trace: true })) || []; }
+  catch { history = (await rpc(sb, 'ai_history', { p_unit: unit, p_limit: 16 })) || []; }   // migration 20261019 not applied yet
   let account = null;
   try { account = await rpc(sb, 'ai_account', { p_unit: unit }); } catch { /* the assistant can still chat */ }
   await rpc(sb, 'ai_log', { p_unit: unit, p_role: 'user', p_content: message });
 
-  const messages = [{ role: 'system', content: systemPrompt(unit, now, account) },
+  const messages = [{ role: 'system', content: systemPrompt(unit, now, account, lookupsText(history)) },
     ...history.map(m => ({ role: m.role, content: String(m.content).slice(0, 1500) })), { role: 'user', content: message }];
   const ui = { chips: [], proposals: [], screens: [] };
   const ctx = { sb, unit, ui, services: null };
   const tools = TOOLS.map(t => ({ type: 'function', function: t }));
 
   let reply = '';
+  const trace = [];
   for (let round = 0; round < maxRounds; round++) {
     let res;
     try { res = await openai({ messages, tools }); }
@@ -238,14 +288,16 @@ export async function handle({ sb, body, openai, now = new Date(), maxRounds = 6
     messages.push({ role: 'assistant', content: msg.content || null, tool_calls: calls });
     for (const c of calls) {
       let out;
-      try { out = await runTool(c.function.name, JSON.parse(c.function.arguments || '{}'), ctx); }
+      let targs = {};
+      try { targs = JSON.parse(c.function.arguments || '{}'); out = await runTool(c.function.name, targs, ctx); }
       catch (e) { out = { error: friendly(e.message) }; }
+      if (['get_slots', 'list_services', 'list_menu'].includes(c.function.name)) trace.push({ tool: c.function.name, args: targs, result: out });
       messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 6000) });
     }
   }
   if (!reply) reply = ui.proposals.length ? tr(lang, 'کارت پایین رو چک کن و تایید بزن.', 'Check the card below and approve it.') : FALLBACK[lang];
 
   const meta = { chips: ui.chips, proposals: ui.proposals, screens: ui.screens };
-  await rpc(sb, 'ai_log', { p_unit: unit, p_role: 'assistant', p_content: reply, p_meta: meta });
+  await rpc(sb, 'ai_log', { p_unit: unit, p_role: 'assistant', p_content: reply, p_meta: { ...meta, trace: compactTrace(trace) } });
   return { reply, ...meta };
 }

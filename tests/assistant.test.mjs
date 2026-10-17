@@ -61,7 +61,7 @@ let taken;
 ({ out } = await turn(A, '1204', 'book squash please', [
   call('get_slots', { provider_id: 'sp-3', days: 3, after: '17:00' }),
   async (m) => { const s = lastTool(m).slots[0]; taken = s.starts_at; await as(B, `select * from book_slot('407','sp-3',$1,'account')`, [s.starts_at]); return call('propose_booking', { provider_id: 'sp-3', starts_at: s.starts_at, language: 'en' }); },
-  (m) => say(lastTool(m).error.includes('taken') ? 'Someone just grabbed that one. Want the next free time?' : 'booked!'),
+  (m) => say(lastTool(m).ok === false ? 'Someone just grabbed that one. Want the next free time?' : 'booked!'),
 ]));
 t('if someone else got the slot, no card is made and the assistant is told why', out.proposals.length === 0 && /grabbed/.test(out.reply), JSON.stringify(out));
 
@@ -125,7 +125,7 @@ out = await handle({ sb: sbFor(A), body: { unit: '1204', message: 'hello' }, ope
 t('the limit message is English for English messages', /tomorrow/i.test(out.reply));
 await db.exec(`update app_settings set value='500'::jsonb where key='ai_daily_limit'`);
 ({ out } = await turn(A, '1204', 'کلید تست', [call('get_slots', { provider_id: 'nope' }), (m) => say(JSON.stringify(lastTool(m)))]));
-t('an unknown place returns an empty list, not a crash', JSON.parse(out.reply).found === 0);
+t('an unknown place gives a friendly error, not a crash', /no such place/.test(JSON.parse(out.reply).error));
 ({ out } = await turn(A, '1204', 'x', [call('delete_everything', {}), (m) => say(lastTool(m).error)]));
 t('an unknown tool is refused', /could not be prepared/.test(out.reply));
 
@@ -142,6 +142,29 @@ t('a model that never stops is cut off after 3 rounds with a fallback reply', ai
 ({ ai } = await turn(A, '1204', 'پیام آخر', [say('باشه')]));
 t('earlier messages are sent to the model as context', ai.log.seen[0].filter(m => m.role === 'user').length >= 3 && ai.log.seen[0].some(m => m.role === 'assistant'));
 t('the assistant has every tool defined with a name and parameters', TOOLS.length === 10 && TOOLS.every(x => x.name && x.parameters) && PERSONA.includes('Grok'));
+
+// ---- 9. the yes-after-an-offer flow: the next turn remembers the lookup, accepts place names and Tehran date+time
+let offered;
+({ out } = await turn(A, '1204', 'استخر پنجشنبه ساعت ۹ شب', [
+  call('get_slots', { provider_id: 'استخر', days: 7 }),
+  m => { const tl = lastTool(m); offered = tl.slots[0]; return say(`ساعت ${offered.time} جا هست. می‌خوای رزرو کنم؟`); },
+]));
+t('get_slots accepts a place name and returns date and time', offered && /^\d{4}-\d{2}-\d{2}$/.test(offered.date) && /^\d{2}:\d{2}$/.test(offered.time));
+r = await sbFor(A).rpc('ai_history', { p_unit: '1204', p_limit: 20, p_with_trace: true });
+t('the lookup is stored with the reply', r.data.some(m => m.role === 'assistant' && m.meta?.trace?.length));
+({ out, ai } = await turn(A, '1204', 'آره', [
+  m => { const sys = m[0].content; if (!sys.includes('EARLIER LOOKUPS') || !sys.includes(offered.date)) throw new Error('no memory'); return call('propose_booking', { place: 'استخر', date: offered.date, time: offered.time, language: 'fa' }); },
+  m => say(lastTool(m).ok ? 'کارت پایینه، تایید بزن.' : 'خطا'),
+]));
+t('"yes" after an offer makes the card using the remembered lookup', out.proposals.length === 1 && out.proposals[0].action === 'book', JSON.stringify(out));
+await sbFor(A).rpc('reject_proposal', { p_id: out.proposals[0].id });
+({ out } = await turn(A, '1204', 'x', [
+  call('propose_booking', { place: 'pool', date: offered.date, time: '03:07', language: 'en' }),
+  m => say(JSON.stringify(lastTool(m))),
+]));
+t('a wrong time returns nearest free times, no card', out.proposals.length === 0 && JSON.parse(out.reply).nearest_free_that_day.length > 0, out.reply);
+({ out, ai } = await turn(A, '1204', 'hi', [say('hey')]));
+t('the system prompt has a calendar with weekdays', /CALENDAR/.test(ai.log.seen[0][0].content) && /Saturday|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday/.test(ai.log.seen[0][0].content));
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
