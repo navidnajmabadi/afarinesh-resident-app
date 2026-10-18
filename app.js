@@ -71,7 +71,7 @@ R.loading=()=>({noTab:true,html:`<div class="spin" role="status" aria-label="د�
 R.login=()=>({noTab:true,cls:'login',html:`
   <div class="hero">${tower()}<div class="wm"><div class="wm-word">AFARINESH</div><p class="sub" style="margin-top:12px">زندگی در برج ${TOWER}</p></div></div>
   <form class="glass" id="login-form" style="border-radius:28px" novalidate>
-    <div class="field"><label for="l-u">کد واحد یا نام کاربری</label><input class="input num" id="l-u" name="unit" inputmode="numeric" autocomplete="username" placeholder="مثلاً ۱۲۰۴"></div>
+    <div class="field"><label for="l-u">کد واحد یا نام کاربری</label><input class="input num" id="l-u" name="unit" type="text" inputmode="text" enterkeyhint="next" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" placeholder="مثلاً ۱۲۰۴ یا ali"></div>
     <div class="field"><label for="l-p">رمز عبور</label><div style="position:relative"><input class="input" id="l-p" name="pass" type="password" autocomplete="current-password" placeholder="رمز عبور"><button type="button" class="icon-btn" style="position:absolute;left:4px;top:4px" aria-label="نمایش رمز" data-act="peek">${I('eye','sm')}</button></div></div>
     <div class="err" id="l-err" role="alert"></div>
     <button type="button" class="chk" role="checkbox" aria-checked="${S.consent}" data-act="consent"><span class="box">${I('check','xs')}</span><span>آیین‌نامه ساختمان را خوانده‌ام و می‌پذیرم. <span class="link" style="display:inline;min-height:0" data-sheet="rules">مطالعه</span></span></button>
